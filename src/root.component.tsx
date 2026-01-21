@@ -305,8 +305,9 @@ export default function Root() {
     alert("Navigating back to services...");
   };
 
-  const handlePayment = () => {
-    alert("Payment successful!");
+  const handlePayment =(url)=>{
+    // alert("Payment successful!");
+    window.open(url, "_blank")
     handleNext();
   };
 
@@ -509,7 +510,7 @@ export default function Root() {
                 items={feeItems}
                 expiryDate="20/6/2025"
                 paymentTime="19:55:00"
-                onPayment={handlePayment}
+                onPayment={()=> handlePayment("https://google.com")}
               />
             )}
 
