@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Parcel from "single-spa-react/parcel";
 import { mountRootParcel } from "single-spa";
 import {
@@ -10,6 +10,12 @@ import {
   PaymentTableParcel,
 } from "./shared-ui";
 import { FeeSummaryParcel } from "./common-components";
+import {
+  getRequest,
+  createRequest,
+  updateRequestStep,
+  type RequestData,
+} from "./requestStorage";
 
 // ==========================================
 // STYLES - service-a has full control!
@@ -211,8 +217,32 @@ interface FormErrors {
 }
 
 export default function Root() {
-  const [currentStep, setCurrentStep] = useState(4);
-  const currentConfig = stepConfigs[currentStep as keyof typeof stepConfigs];
+  // Get requestId from URL or mount point data attribute
+  const getRequestId = (): string | null => {
+    if (typeof window === "undefined") return null;
+    
+    // Try to get from mount point data attribute first
+    const mountPoint = document.querySelector('[data-request-id]');
+    if (mountPoint) {
+      const requestId = mountPoint.getAttribute('data-request-id');
+      if (requestId) return requestId;
+    }
+    
+    // Fallback to URL parsing
+    const pathname = window.location.pathname;
+    const match = pathname.match(/\/(service-[a-z]+)\/(.+)/);
+    if (match && match[2]) {
+      // Return "new" if it's "new", otherwise return the requestId
+      return match[2];
+    }
+    
+    return null;
+  };
+
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isReadonly, setIsReadonly] = useState(false);
+  const currentConfig = stepConfigs[currentStep as keyof typeof stepConfigs] || stepConfigs[1];
 
   // Form state for step 1
   const [formData, setFormData] = useState({
@@ -225,6 +255,222 @@ export default function Root() {
 
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
+  const lastProcessedRequestIdRef = useRef<string | null>(null);
+  const formDataRef = useRef(formData);
+  
+  // Keep formDataRef in sync with formData so we can access it in event handlers
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
+
+  // Helper function to find next incomplete step
+  const findNextIncompleteStep = (completedSteps: number[]): number => {
+    for (let i = 1; i <= TOTAL_STEPS; i++) {
+      if (!completedSteps.includes(i)) {
+        return i;
+      }
+    }
+    return TOTAL_STEPS; // All steps completed, show last step
+  };
+
+  // Load request data on mount and when URL changes
+  useEffect(() => {
+    const loadRequestData = () => {
+      try {
+        const id = getRequestId();
+        
+        // If we already processed this requestId, skip
+        if (id === lastProcessedRequestIdRef.current) {
+          return;
+        }
+        
+        if (id && id !== 'new') {
+          // Load existing request
+          try {
+            const request = getRequest(id);
+            
+            if (request) {
+              lastProcessedRequestIdRef.current = id;
+              setRequestId(id);
+              
+              // Load saved form data
+              if (request.formData && Object.keys(request.formData).length > 0) {
+                setFormData((prev) => ({ ...prev, ...request.formData }));
+              }
+              
+              // Navigate to next incomplete step
+              const nextIncompleteStep = findNextIncompleteStep(request.completedSteps || []);
+              if (nextIncompleteStep >= 1 && nextIncompleteStep <= TOTAL_STEPS) {
+                setCurrentStep(nextIncompleteStep);
+              }
+              
+              // Mark current step as readonly if it's already completed
+              setIsReadonly((request.completedSteps || []).includes(nextIncompleteStep));
+            }
+          } catch (error) {
+            console.error("Error loading request data:", error);
+            // Reset to step 1 on error
+            setCurrentStep(1);
+          }
+        } else if (id === 'new') {
+          // Create new request - only if we haven't already processed "new"
+          if (lastProcessedRequestIdRef.current !== 'new') {
+            try {
+              const serviceId = window.location.pathname.split('/')[1] || 'service-a';
+              const newRequest = createRequest(
+                serviceId,
+                "خدمة التصديق على محاضر الجمعيات العامة ومجالس الإدارة"
+              );
+              
+              // Mark "new" as processed to prevent duplicate creation
+              lastProcessedRequestIdRef.current = 'new';
+              
+              // Update URL first
+              const newPath = `/${serviceId}/${newRequest.requestId}`;
+              window.history.replaceState({}, '', newPath);
+              
+              // Set requestId and mark the new requestId as processed
+              lastProcessedRequestIdRef.current = newRequest.requestId;
+              setRequestId(newRequest.requestId);
+              
+              // Reset form state for new request
+              setFormData({
+                companyName: "",
+                companyType: undefined,
+                activityType: undefined,
+                commercialRegister: "",
+                capital: "",
+              });
+              setCurrentStep(1);
+              setIsReadonly(false);
+              setFormErrors({});
+              setFormTouched({});
+            } catch (error) {
+              console.error("Error creating new request:", error);
+            }
+          }
+        } else {
+          // No requestId found
+          setRequestId(null);
+        }
+      } catch (error) {
+        console.error("Error in loadRequestData:", error);
+        // Ensure we have a valid step
+        setCurrentStep(1);
+      }
+    };
+    
+    loadRequestData();
+  }, []); // Run on mount only
+
+  // Listen for URL changes (for browser back/forward and programmatic navigation)
+  useEffect(() => {
+    let lastKnownPath = window.location.pathname;
+    let lastKnownRequestId: string | null = null;
+    
+    const handleLocationChange = () => {
+      const currentPath = window.location.pathname;
+      const id = getRequestId();
+      const currentProcessed = lastProcessedRequestIdRef.current;
+      
+      // Only process if the path actually changed
+      const pathChanged = currentPath !== lastKnownPath;
+      const requestIdChanged = id !== lastKnownRequestId;
+      
+      // Update tracking variables
+      lastKnownPath = currentPath;
+      lastKnownRequestId = id;
+      
+      // If path didn't change and requestId didn't change, skip processing
+      // This prevents resetting form when user is typing
+      if (!pathChanged && !requestIdChanged) {
+        return;
+      }
+      
+      // If URL changed to "new", reset the processed ref to allow creation
+      // But only if we're actually navigating to "new" (path changed)
+      // And don't reset if form already has data (user might be typing)
+      if (id === 'new' && currentProcessed !== 'new' && pathChanged) {
+        // Check if form has any data - if it does, don't reset (user is actively using the form)
+        const currentFormData = formDataRef.current;
+        const hasFormData = currentFormData.companyName.trim() || 
+                           currentFormData.companyType || 
+                           currentFormData.activityType || 
+                           currentFormData.commercialRegister.trim() || 
+                           currentFormData.capital.trim();
+        
+        // Only reset if form is empty or we're actually navigating from a different request
+        if (!hasFormData || (currentProcessed && currentProcessed !== 'new' && currentProcessed !== null)) {
+          lastProcessedRequestIdRef.current = null; // Reset to allow processing "new"
+          setRequestId('new');
+          // Reset form state for new request only if we're actually navigating
+          setFormData({
+            companyName: "",
+            companyType: undefined,
+            activityType: undefined,
+            commercialRegister: "",
+            capital: "",
+          });
+          setCurrentStep(1);
+          setIsReadonly(false);
+          setFormErrors({});
+          setFormTouched({});
+        }
+        return;
+      }
+      
+      // Only reload if the requestId changed and we haven't processed it
+      if (id && id !== 'new' && id !== currentProcessed && requestIdChanged) {
+        lastProcessedRequestIdRef.current = null; // Reset to allow reload
+        // Trigger reload by setting requestId
+        setRequestId(id);
+        // Force a small delay to ensure state update
+        setTimeout(() => {
+          const currentId = getRequestId();
+          if (currentId && currentId !== 'new') {
+            const request = getRequest(currentId);
+            if (request) {
+              lastProcessedRequestIdRef.current = currentId;
+              setRequestId(currentId);
+              const nextIncompleteStep = findNextIncompleteStep(request.completedSteps || []);
+              if (nextIncompleteStep >= 1 && nextIncompleteStep <= TOTAL_STEPS) {
+                setCurrentStep(nextIncompleteStep);
+              }
+              setIsReadonly((request.completedSteps || []).includes(nextIncompleteStep));
+              if (request.formData && Object.keys(request.formData).length > 0) {
+                setFormData((prev) => ({ ...prev, ...request.formData }));
+              }
+            }
+          } else if (currentId === 'new' && window.location.pathname !== lastKnownPath) {
+            // If it changed to "new", handle it only if path actually changed
+            lastProcessedRequestIdRef.current = null;
+            setRequestId('new');
+            setFormData({
+              companyName: "",
+              companyType: undefined,
+              activityType: undefined,
+              commercialRegister: "",
+              capital: "",
+            });
+            setCurrentStep(1);
+            setIsReadonly(false);
+          }
+        }, 50);
+      }
+    };
+
+    // Listen for popstate (browser back/forward)
+    window.addEventListener('popstate', handleLocationChange);
+    
+    // Check for URL changes periodically (for replaceState/pushState)
+    // Increased interval to reduce unnecessary checks
+    const checkInterval = setInterval(handleLocationChange, 500);
+
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      clearInterval(checkInterval);
+    };
+  }, []);
 
   // Validation function
   const validateForm = (): boolean => {
@@ -291,13 +537,47 @@ export default function Root() {
     }
 
     if (currentStep < TOTAL_STEPS) {
+      // Save current step data before moving to next
+      if (requestId) {
+        try {
+          updateRequestStep(requestId, currentStep + 1, currentStep === 1 ? formData : undefined);
+        } catch (error) {
+          console.error("Error saving request data:", error);
+        }
+      }
+      
       setCurrentStep(currentStep + 1);
+      setIsReadonly(false); // Next step is not readonly
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+      const prevStep = currentStep - 1;
+      
+      // Check if previous step is completed (readonly) and load its data
+      if (requestId) {
+        try {
+          const request = getRequest(requestId);
+          if (request) {
+            // Check if step is completed
+            if (request.completedSteps.includes(prevStep)) {
+              setIsReadonly(true);
+            } else {
+              setIsReadonly(false);
+            }
+            
+            // If going back to step 1, restore form data
+            if (prevStep === 1 && request.formData) {
+              setFormData((prev) => ({ ...prev, ...request.formData }));
+            }
+          }
+        } catch (error) {
+          console.error("Error checking step status:", error);
+        }
+      }
+      
+      setCurrentStep(prevStep);
     }
   };
 
@@ -370,6 +650,7 @@ export default function Root() {
                           ? formErrors.companyName
                           : undefined
                       }
+                      disabled={isReadonly}
                     />
                   </div>
                 </div>
@@ -400,6 +681,7 @@ export default function Root() {
                           ? formErrors.companyType
                           : undefined
                       }
+                      disabled={isReadonly}
                     />
                   </div>
                   <div style={styles.formField}>
@@ -426,6 +708,7 @@ export default function Root() {
                           ? formErrors.activityType
                           : undefined
                       }
+                      disabled={isReadonly}
                     />
                   </div>
                 </div>
@@ -455,6 +738,7 @@ export default function Root() {
                           ? formErrors.commercialRegister
                           : undefined
                       }
+                      disabled={isReadonly}
                     />
                   </div>
                   <div style={styles.formField}>
@@ -478,6 +762,7 @@ export default function Root() {
                       error={
                         formTouched.capital ? formErrors.capital : undefined
                       }
+                      disabled={isReadonly}
                     />
                   </div>
                 </div>
