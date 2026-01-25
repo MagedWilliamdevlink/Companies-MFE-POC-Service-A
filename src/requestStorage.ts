@@ -4,7 +4,12 @@ export interface RequestData {
   serviceId: string;
   serviceName: string;
   companyName: string;
-  status: "تتطلب التوقيع" | "تتطلب الدفع" | "يتطلب التعديل" | "مكتمل" | "قيد المراجعة";
+  status:
+    | "تتطلب التوقيع"
+    | "تتطلب الدفع"
+    | "يتطلب التعديل"
+    | "مكتمل"
+    | "قيد المراجعة";
   creationDate: string;
   currentStep: number;
   completedSteps: number[];
@@ -21,7 +26,7 @@ export function generateRequestId(): string {
 // Get all requests
 export function getAllRequests(): RequestData[] {
   if (typeof window === "undefined") return [];
-  
+
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     return stored ? JSON.parse(stored) : [];
@@ -29,6 +34,18 @@ export function getAllRequests(): RequestData[] {
     console.error("Error reading requests from storage:", error);
     return [];
   }
+}
+
+export function getSavedRequestById() {
+  let request = null;
+  const pattern = new URLPattern({
+    pathname: "/services/:serviceID/:generatedID",
+  });
+  if (pattern.test(window.location)) {
+    const groups = pattern.exec(location).pathname.groups;
+    request = getRequest(groups.generatedID);
+  }
+  return request;
 }
 
 // Get a specific request by ID
@@ -40,21 +57,23 @@ export function getRequest(requestId: string): RequestData | null {
 // Save a request
 export function saveRequest(request: RequestData): void {
   if (typeof window === "undefined") return;
-  
+
   try {
     const requests = getAllRequests();
-    const existingIndex = requests.findIndex((r) => r.requestId === request.requestId);
-    
+    const existingIndex = requests.findIndex(
+      (r) => r.requestId === request.requestId
+    );
+
     if (existingIndex >= 0) {
       requests[existingIndex] = request;
     } else {
       requests.push(request);
     }
-    
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
-    
+
     // Dispatch custom event to notify other components
-    window.dispatchEvent(new CustomEvent('requestUpdated'));
+    window.dispatchEvent(new CustomEvent("requestUpdated"));
   } catch (error) {
     console.error("Error saving request to storage:", error);
   }
@@ -82,7 +101,7 @@ export function createRequest(
     completedSteps: [],
     formData: {},
   };
-  
+
   saveRequest(request);
   return request;
 }
@@ -95,17 +114,17 @@ export function updateRequestStep(
 ): void {
   const request = getRequest(requestId);
   if (!request) return;
-  
+
   request.currentStep = step;
   if (formData) {
     request.formData = { ...request.formData, ...formData };
   }
-  
+
   // Mark previous steps as completed
   if (!request.completedSteps.includes(step - 1) && step > 1) {
     request.completedSteps.push(step - 1);
   }
-  
+
   saveRequest(request);
 }
 
