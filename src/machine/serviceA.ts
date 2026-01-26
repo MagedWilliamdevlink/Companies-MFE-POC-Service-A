@@ -16,21 +16,19 @@ const stateMachine = setup({
     events: {} as
       | { type: "PAYMENT_SUCCEEDED" }
       | { type: "PAYMENT_FAILED" }
-      | { type: "NEXT" }
+      | { type: "NEXT"; validStep: boolean }
       | { type: "PREVIOUS" },
   },
   guards: {
     isFormValid: ({ context, event }) => {
-      // Add your guard condition here
-      const request = getSavedRequestById();
-      if (request.formData.hasOwnProperty("formEntry")) {
-        context.isFormValid = true;
+      if (event.type === "NEXT" && event?.validStep) {
+        return true;
       }
-      return true;
+      return false;
     },
     isReviewed: ({ context, event }) => {
       // Add your guard condition here
-      return true;
+      return false;
     },
     isReviewPending: ({ context, event }) => {
       // Add your guard condition here

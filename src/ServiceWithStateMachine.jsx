@@ -6,6 +6,8 @@ import { mountRootParcel } from "single-spa";
 
 import { VerticalStepperParcel, ButtonParcel } from "./shared-ui";
 import { styles } from "./styles";
+import { Form } from "antd";
+import { getRequestID, updateRequestStep } from "./requestStorage";
 
 // Steps configuration
 const steps = [
@@ -50,20 +52,34 @@ export default function ServiceComponent() {
   const stepsWithStatus = steps.map((s, idx) => {
     if (s.id === state.value) {
       CurrentStepOrder = idx;
-      // console.log(s.id, state.value);
       return { ...s, status: "current" };
     }
     return s;
   });
+
   const currentConfig = steps[CurrentStepOrder];
 
   const TOTAL_STEPS = steps.length;
-  // console.log(stepsWithStatus);
-  console.log(
-    state,
-    state.can({ type: "PREVIOUS" }),
-    state.can({ type: "NEXT" })
-  );
+
+  const [form] = Form.useForm();
+
+  const requestID = getRequestID();
+
+  const handleNext = () => {
+    form
+      .validateFields(true)
+      .then((v) => {
+        updateRequestStep(requestID, state.value, v, state);
+        const moveMachineToNextStep = checkoutMachine.send({
+          type: "NEXT",
+          validStep: true,
+        });
+        console.log(moveMachineToNextStep);
+      })
+      .catch((e) => {
+        console.log("validation error", e);
+      });
+  };
   return (
     <div style={styles.wrapper}>
       {/* ====== SIDEBAR with VerticalStepper ====== */}
@@ -90,12 +106,12 @@ export default function ServiceComponent() {
 
           {/* ------ Content Body ------ */}
           <div style={styles.contentBody}>
-            <details>
+            {/* <details>
               <summary>Current Step: {String(state.value)}</summary>
               <pre>{JSON.stringify(state.context, null, 2)}</pre>
-            </details>
+            </details>*/}
 
-            {inFormEntry && <FormEntry />}
+            {inFormEntry && <FormEntry form={form} />}
 
             {inAwaitingReview && <>Waiting for Application to be Reviewed</>}
 
@@ -132,7 +148,7 @@ export default function ServiceComponent() {
                   size={"sm"}
                   fullWidth={false}
                   className={"w-fit"}
-                  onClick={() => checkoutMachine.send({ type: "NEXT" })}
+                  onClick={handleNext}
                 >
                   التالي
                 </Parcel>

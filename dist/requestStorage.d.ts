@@ -5,6 +5,7 @@ export interface RequestData {
     companyName: string;
     status: "تتطلب التوقيع" | "تتطلب الدفع" | "يتطلب التعديل" | "مكتمل" | "قيد المراجعة";
     creationDate: string;
+    machineSnapshot: any;
     currentStep: number;
     completedSteps: number[];
     formData: Record<string, any>;

@@ -20,7 +20,7 @@ interface FormErrors {
   capital?: string;
 }
 
-export default function FormEntry() {
+export default function FormEntry({ form }) {
   // Import shared UI - all parcels ready to use
 
   // Form state for step 1
@@ -102,18 +102,17 @@ export default function FormEntry() {
       setFormErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
-  const [form] = Form.useForm();
   return (
     <>
       <div style={styles.formContainer}>
         <Form
           initialValues={formData}
           form={form}
-          name="basic"
+          name="formEntry"
           layout="vertical"
         >
           <Form.Item
-            name="companyName"
+            name={["formEntry", "companyName"]}
             label="أدخل اسم الشركة"
             rules={[
               { required: true },
@@ -134,7 +133,7 @@ export default function FormEntry() {
 
           <Form.Item
             label="اختر نوع الشركة"
-            name="companyType"
+            name={["formEntry", "companyType"]}
             rules={[
               {
                 required: true,
@@ -158,7 +157,7 @@ export default function FormEntry() {
           </Form.Item>
 
           <Form.Item
-            name="activityType"
+            name={["formEntry", "activityType"]}
             label="اختر نوع النشاط"
             rules={[
               {
@@ -183,14 +182,22 @@ export default function FormEntry() {
           </Form.Item>
 
           <Form.Item
-            name="commercialRegister"
+            name={["formEntry", "commercialRegister"]}
             label="أدخل رقم السجل التجاري"
             rules={[
               {
                 required: true,
               },
               {
-                type: "number",
+                validator: (_, value) => {
+                  if (!value) return Promise.resolve();
+
+                  if (isNaN(Number(value))) {
+                    return Promise.reject("يجب إدخال رقم صحيح");
+                  }
+
+                  return Promise.resolve();
+                },
               },
             ]}
           >
@@ -212,14 +219,20 @@ export default function FormEntry() {
           </Form.Item>
 
           <Form.Item
-            name="capital"
+            name={["formEntry", "capital"]}
             label="أدخل رأس المال"
             rules={[
+              { required: true, message: "رأس المال مطلوب" },
               {
-                required: true,
-              },
-              {
-                type: "number",
+                validator: (_, value) => {
+                  if (!value) return Promise.resolve();
+
+                  if (isNaN(Number(value))) {
+                    return Promise.reject("يجب إدخال رقم صحيح");
+                  }
+
+                  return Promise.resolve();
+                },
               },
             ]}
           >

@@ -13,6 +13,7 @@ export interface RequestData {
   creationDate: string;
   currentStep: number;
   completedSteps: number[];
+  machineSnapshot: any;
   formData: Record<string, any>;
 }
 
@@ -72,6 +73,7 @@ export function saveRequest(request: RequestData): void {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
 
+    console.log(JSON.stringify(requests));
     // Dispatch custom event to notify other components
     window.dispatchEvent(new CustomEvent("requestUpdated"));
   } catch (error) {
@@ -97,6 +99,7 @@ export function createRequest(
       month: "numeric",
       day: "numeric",
     }),
+    machineSnapshot: null,
     currentStep: 1,
     completedSteps: [],
     formData: {},
@@ -110,7 +113,8 @@ export function createRequest(
 export function updateRequestStep(
   requestId: string,
   step: number,
-  formData?: Record<string, any>
+  formData?: Record<string, any>,
+  machineSnapshot?: any
 ): void {
   const request = getRequest(requestId);
   if (!request) return;
@@ -120,10 +124,14 @@ export function updateRequestStep(
     request.formData = { ...request.formData, ...formData };
   }
 
-  // Mark previous steps as completed
-  if (!request.completedSteps.includes(step - 1) && step > 1) {
-    request.completedSteps.push(step - 1);
+  if (machineSnapshot) {
+    request.machineSnapshot = machineSnapshot;
   }
+  console.log(requestId, step, formData, request, machineSnapshot);
+  // Mark previous steps as completed
+  // if (!request.completedSteps.includes(step - 1) && step > 1) {
+  //   request.completedSteps.push(step - 1);
+  // }
 
   saveRequest(request);
 }
@@ -132,4 +140,15 @@ export function updateRequestStep(
 export function getRequestsByService(serviceId: string): RequestData[] {
   const requests = getAllRequests();
   return requests.filter((r) => r.serviceId === serviceId);
+}
+
+export function getRequestID() {
+  const pattern = new URLPattern({
+    pathname: "/services/:serviceID/:requestID",
+  });
+  if (pattern.test(location)) {
+    const groups = pattern.exec(location).pathname.groups;
+    return groups?.requestID;
+  }
+  return null;
 }
