@@ -59,6 +59,11 @@ export default function ServiceComponent() {
 
   const TOTAL_STEPS = steps.length;
   // console.log(stepsWithStatus);
+  console.log(
+    state,
+    state.can({ type: "PREVIOUS" }),
+    state.can({ type: "NEXT" })
+  );
   return (
     <div style={styles.wrapper}>
       {/* ====== SIDEBAR with VerticalStepper ====== */}
@@ -106,28 +111,32 @@ export default function ServiceComponent() {
             <br />
 
             <div className="flex gap-2 justify-end px-3">
-              <Parcel
-                config={ButtonParcel}
-                mountParcel={mountRootParcel}
-                size={"sm"}
-                variant={"outline"}
-                fullWidth={false}
-                className={"w-fit"}
-                onClick={() => checkoutMachine.send({ type: "PREVIOUS" })}
-              >
-                الرجوع
-              </Parcel>
+              {state.can({ type: "PREVIOUS" }) && (
+                <Parcel
+                  config={ButtonParcel}
+                  mountParcel={mountRootParcel}
+                  size={"sm"}
+                  variant={"outline"}
+                  fullWidth={false}
+                  className={"w-fit"}
+                  onClick={() => checkoutMachine.send({ type: "PREVIOUS" })}
+                >
+                  الرجوع
+                </Parcel>
+              )}
 
-              <Parcel
-                config={ButtonParcel}
-                mountParcel={mountRootParcel}
-                size={"sm"}
-                fullWidth={false}
-                className={"w-fit"}
-                onClick={() => checkoutMachine.send({ type: "NEXT" })}
-              >
-                التالي
-              </Parcel>
+              {state.can({ type: "NEXT" }) && (
+                <Parcel
+                  config={ButtonParcel}
+                  mountParcel={mountRootParcel}
+                  size={"sm"}
+                  fullWidth={false}
+                  className={"w-fit"}
+                  onClick={() => checkoutMachine.send({ type: "NEXT" })}
+                >
+                  التالي
+                </Parcel>
+              )}
             </div>
           </div>
         </main>
