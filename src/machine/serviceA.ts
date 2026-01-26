@@ -48,6 +48,9 @@ const stateMachine = setup({
       // Add your guard condition here
       return false;
     },
+    hasPaymentCompletedInContext: ({ context }) => {
+      return context.isPaymentCompleted === true;
+    },
   },
 }).createMachine({
   context: {
@@ -102,9 +105,17 @@ const stateMachine = setup({
     },
     billingSummary: {
       on: {
-        NEXT: {
-          target: "externalPayment",
-        },
+        NEXT: [
+          {
+            target: "paymentSuccess",
+            guard: {
+              type: "hasPaymentCompletedInContext",
+            },
+          },
+          {
+            target: "externalPayment",
+          },
+        ],
         PREVIOUS: {
           target: "awaitingReview",
         },
