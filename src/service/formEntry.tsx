@@ -106,7 +106,15 @@ export default function FormEntry({ form }) {
     <>
       <div style={styles.formContainer}>
         <Form
-          initialValues={formData}
+          initialValues={{
+            formEntry: {
+              companyName: "xyz",
+              companyType: "llc",
+              activityType: "general_trade",
+              commercialRegister: "1234",
+              capital: "4321",
+            },
+          }}
           form={form}
           name="formEntry"
           layout="vertical"

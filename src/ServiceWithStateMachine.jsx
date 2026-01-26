@@ -9,40 +9,42 @@ import { VerticalStepperParcel, ButtonParcel } from "./shared-ui";
 import { styles } from "./styles";
 import { Checkbox, Form } from "antd";
 import { getRequestID, getRequest, updateRequestStep } from "./requestStorage";
+import TextArea from "antd/es/input/TextArea";
 
 // Steps configuration
 const steps = [
   {
     id: "formEntry",
-    completeOn: "isFormValid",
+    completeon: "isFormValid",
     title: "بيانات الشركة",
     subtitle: "يرجى إدخال بيانات الشركة",
   },
   {
     id: "awaitingReview",
-    completeOn: "isReviewed",
+    completeon: "isReviewed",
     title: "بيانات المؤسسين",
     subtitle: "يرجى إدخال بيانات المؤسسين",
   },
   {
     id: "billingSummary",
+    completeon: "isPaymentCompleted",
     title: "سجل المدفوعات",
     subtitle: "عرض المدفوعات السابقة",
   },
   {
     id: "paymentSuccess",
-    completeOn: "isPaymentCompleted",
+    completeon: "isPaymentCompleted",
     title: "دفع رسوم العقد",
     subtitle: "من فضلك قم بدفع الرسوم المطلوبة لأتمام عملية الأستخراج",
   },
   {
     id: "shippingAddress",
-    completeOn: "isShippingValid",
+    completeon: "isShippingValid",
     title: "الخطوة الخامسة",
   },
   {
     id: "completed",
-    completeOn: "isRequestComplete",
+    completeon: "isRequestComplete",
     title: "تم الإرسال",
     subtitle: "تم إرسال الطلب بنجاح",
   },
@@ -73,7 +75,7 @@ export default function ServiceComponent() {
 
   let CurrentStepOrder = 0;
   const stepsWithStatus = steps.map((s, idx) => {
-    if (state.context[s.completeOn] === true) {
+    if (state.context[s.completeon] === true) {
       return { ...s, status: "finish" };
     }
     if (s.id === state.value) {
@@ -93,6 +95,7 @@ export default function ServiceComponent() {
     form
       .validateFields(true)
       .then((v) => {
+        console.log("v", v);
         // Send the event to update the machine context first
         checkoutMachine.send({
           type: "NEXT",
@@ -166,13 +169,155 @@ export default function ServiceComponent() {
               </>
             )}
 
-            {inBillingSummary && <>Application approved, heres the bill</>}
+            {inBillingSummary && (
+              <>
+                Application approved, heres the bill
+                <Form
+                  form={form}
+                  initialValues={{
+                    inBillingSummary: {
+                      table: [
+                        {
+                          name: "item1",
+                          price: "00.0000000000",
+                        },
+                        {
+                          name: "item2",
+                          price: "000.000000000",
+                        },
+                      ],
+                    },
+                  }}
+                />
+              </>
+            )}
 
-            {inPaymentSuccess && <>payment successful</>}
+            {inPaymentSuccess && (
+              <>
+                payment successful
+                <Form
+                  form={form}
+                  initialValues={{
+                    inBillingSummary: {
+                      table: [
+                        {
+                          name: "item1",
+                          price: "00.0000000000",
+                        },
+                        {
+                          name: "item2",
+                          price: "000.000000000",
+                        },
+                      ],
+                    },
+                  }}
+                />
+              </>
+            )}
 
-            {inExternalPayment && <>we are now in efiniance land</>}
+            {inExternalPayment && (
+              <>
+                we are now in efiniance land
+                <Form
+                  form={form}
+                  initialValues={{
+                    inBillingSummary: {
+                      table: [
+                        {
+                          name: "item1",
+                          price: "00.0000000000",
+                        },
+                        {
+                          name: "item2",
+                          price: "000.000000000",
+                        },
+                      ],
+                    },
+                  }}
+                >
+                  <Parcel
+                    config={ButtonParcel}
+                    mountParcel={mountRootParcel}
+                    size={"sm"}
+                    variant={"outline"}
+                    fullWidth={false}
+                    className={"w-fit"}
+                    onClick={() => {
+                      console.log(
+                        "Before PAYMENT_SUCCEEDED:",
+                        "Current state:",
+                        state.value,
+                        "Can send PAYMENT_SUCCEEDED:",
+                        state.can({ type: "PAYMENT_SUCCEEDED" })
+                      );
+                      checkoutMachine.send({ type: "PAYMENT_SUCCEEDED" });
+                      // Get the updated state after the event is processed
+                      const updatedState = checkoutMachine.getSnapshot();
+                      console.log(
+                        "After PAYMENT_SUCCEEDED:",
+                        "New state:",
+                        updatedState.value,
+                        "Context:",
+                        updatedState.context
+                      );
+                      // Store the snapshot with updated context
+                      updateRequestStep(
+                        requestID,
+                        updatedState.value,
+                        {},
+                        updatedState
+                      );
+                    }}
+                  >
+                    Pay (success)
+                  </Parcel>
+                  <Parcel
+                    config={ButtonParcel}
+                    mountParcel={mountRootParcel}
+                    size={"sm"}
+                    variant={"outline"}
+                    fullWidth={false}
+                    className={"w-fit"}
+                    onClick={() => {
+                      checkoutMachine.send({ type: "PAYMENT_FAILED" });
+                      // Get the updated state after the event is processed
+                      const updatedState = checkoutMachine.getSnapshot();
+                      // Store the snapshot with updated context
+                      updateRequestStep(
+                        requestID,
+                        updatedState.value,
+                        {},
+                        updatedState
+                      );
+                    }}
+                  >
+                    Pay (fails)
+                  </Parcel>
+                </Form>
+              </>
+            )}
 
-            {inShippingAddress && <>now enter you address to ship the thing</>}
+            {inShippingAddress && (
+              <>
+                now enter you address to ship the thing
+                <Form form={form} layout="vertical">
+                  <Form.Item
+                    name={["shipping", "address"]}
+                    label={"shipping Address"}
+                    rules={[
+                      {
+                        required: true,
+                      },
+                      {
+                        min: 10,
+                      },
+                    ]}
+                  >
+                    <TextArea></TextArea>
+                  </Form.Item>
+                </Form>
+              </>
+            )}
 
             {inCompleted && <>the request is completed</>}
             <br />
@@ -186,7 +331,18 @@ export default function ServiceComponent() {
                   variant={"outline"}
                   fullWidth={false}
                   className={"w-fit"}
-                  onClick={() => checkoutMachine.send({ type: "PREVIOUS" })}
+                  onClick={() => {
+                    console.log("must go back");
+                    checkoutMachine.send({ type: "PREVIOUS" });
+                    const updatedState = checkoutMachine.getSnapshot();
+                    // Store the snapshot with updated context
+                    updateRequestStep(
+                      requestID,
+                      updatedState.value,
+                      {},
+                      updatedState
+                    );
+                  }}
                 >
                   الرجوع
                 </Parcel>

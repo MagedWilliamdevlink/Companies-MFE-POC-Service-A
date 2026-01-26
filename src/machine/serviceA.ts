@@ -6,12 +6,8 @@ const stateMachine = setup({
     context: {} as {
       isFormValid: boolean;
       isReviewed: boolean;
-      isReviewPending: boolean;
       isPaymentCompleted: boolean;
-      isPaymentRequired: boolean;
-      isPaymentVerified: boolean;
       isShippingValid: boolean;
-      isShippingInvalid: boolean;
       isRequestComplete: boolean;
     },
     events: {} as
@@ -35,41 +31,30 @@ const stateMachine = setup({
       }
       return false;
     },
-    isReviewPending: ({ context, event }) => {
-      // Add your guard condition here
-      return true;
-    },
     isPaymentCompleted: ({ context, event }) => {
+      console.log("isPaymentCompleted", event);
+
+      if (event.type === "PAYMENT_SUCCEEDED") {
+        return true;
+      }
       // Add your guard condition here
-      return true;
-    },
-    isPaymentRequired: ({ context, event }) => {
-      // Add your guard condition here
-      return true;
-    },
-    isPaymentVerified: ({ context, event }) => {
-      // Add your guard condition here
-      return true;
+      return false;
     },
     isShippingValid: ({ context, event }) => {
+      console.log("isShippingValid", event);
+      if (event.type === "NEXT" && event?.validStep) {
+        return true;
+      }
       // Add your guard condition here
-      return true;
-    },
-    isShippingInvalid: ({ context, event }) => {
-      // Add your guard condition here
-      return true;
+      return false;
     },
   },
 }).createMachine({
   context: {
     isFormValid: false,
     isReviewed: false,
-    isReviewPending: false,
     isPaymentCompleted: false,
-    isPaymentRequired: false,
-    isPaymentVerified: false,
     isShippingValid: false,
-    isShippingInvalid: false,
     isRequestComplete: false,
   },
   id: "checkoutWorkflow",
@@ -110,9 +95,6 @@ const stateMachine = setup({
           },
           {
             target: "awaitingReview",
-            guard: {
-              type: "isReviewPending",
-            },
           },
         ],
       },
@@ -120,59 +102,42 @@ const stateMachine = setup({
     },
     billingSummary: {
       on: {
-        NEXT: [
-          {
-            target: "paymentSuccess",
-            guard: {
-              type: "isPaymentCompleted",
-            },
-            actions: assign({
-              isPaymentCompleted: true,
-            }),
-          },
-          {
-            target: "externalPayment",
-            guard: {
-              type: "isPaymentRequired",
-            },
-          },
-        ],
+        NEXT: {
+          target: "externalPayment",
+        },
         PREVIOUS: {
           target: "awaitingReview",
         },
       },
       description: "if Step1 reviewed, we show bill summary",
     },
+    externalPayment: {
+      on: {
+        PAYMENT_SUCCEEDED: {
+          target: "paymentSuccess",
+          actions: assign({
+            isPaymentCompleted: true,
+          }),
+        },
+        PAYMENT_FAILED: {
+          target: "billingSummary",
+          actions: assign({
+            isPaymentCompleted: false,
+          }),
+        },
+      },
+      description: "Generate url from provider, user proceeds to pay",
+    },
     paymentSuccess: {
       on: {
         NEXT: {
           target: "shippingAddress",
-          guard: {
-            type: "isShippingValid",
-          },
-          actions: assign({
-            isPaymentCompleted: true,
-          }),
         },
         PREVIOUS: {
           target: "billingSummary",
         },
       },
       description: "Show Payment Succeeded with timestamp",
-    },
-    externalPayment: {
-      on: {
-        PAYMENT_SUCCEEDED: {
-          target: "paymentSuccess",
-          guard: {
-            type: "isPaymentVerified",
-          },
-        },
-        PAYMENT_FAILED: {
-          target: "billingSummary",
-        },
-      },
-      description: "Generate url from provider, user proceeds to pay",
     },
     shippingAddress: {
       on: {
@@ -182,12 +147,13 @@ const stateMachine = setup({
             guard: {
               type: "isShippingValid",
             },
+            actions: assign({
+              isShippingValid: true,
+              isRequestComplete: true,
+            }),
           },
           {
             target: "shippingAddress",
-            guard: {
-              type: "isShippingInvalid",
-            },
           },
         ],
         PREVIOUS: {
