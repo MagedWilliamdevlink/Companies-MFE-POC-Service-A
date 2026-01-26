@@ -2,7 +2,9 @@
   "extends": "ts-config-single-spa",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "declarationDir": "dist"
+    "declarationDir": "dist",
+    "module": "esnext",
+    "target": "es2017"
   },
   "files": ["src/service-a-service-a.tsx"],
   "include": ["src/**/*"],

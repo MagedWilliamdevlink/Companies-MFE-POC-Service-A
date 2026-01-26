@@ -52,6 +52,7 @@
     "@types/systemjs": "^6.1.1",
     "@types/webpack-env": "^1.16.2",
     "@xstate/react": "^6.0.0",
+    "antd": "^5.29.3",
     "nuqs": "^2.8.6",
     "react": "^18",
     "react-dom": "^18",

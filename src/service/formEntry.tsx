@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Parcel from "single-spa-react/parcel";
 import { mountRootParcel } from "single-spa";
+import { Form } from "antd";
 import {
   VerticalStepperParcel,
   NavigationButtonsParcel,
@@ -9,8 +10,7 @@ import {
   FormSelectParcel,
   PaymentTableParcel,
 } from "../shared-ui";
-
-import { styles } from "./styles";
+import { styles } from "../styles";
 
 interface FormErrors {
   companyName?: string;
@@ -21,6 +21,8 @@ interface FormErrors {
 }
 
 export default function FormEntry() {
+  // Import shared UI - all parcels ready to use
+
   // Form state for step 1
   const [formData, setFormData] = useState({
     companyName: "",
@@ -38,84 +40,6 @@ export default function FormEntry() {
   // ==========================================
   // DATA - service-a controls the data
   // ==========================================
-
-  // Steps configuration
-  const steps = [
-    { title: "الخطوة الأولى" },
-    { title: "الخطوة الثانية" },
-    { title: "الخطوة الثالثة" },
-    { title: "الدفع الالكتروني" },
-    { title: "الخطوة الخامسة" },
-  ];
-
-  // Fee items for step 4 (payment step)
-  const feeItems = [
-    { label: "قيمة رسم السجل التجاري", price: 200 },
-    { label: "رسوم نقابة التجاريين", price: 200 },
-    { label: "رسوم الهيئة العامة للاستثمار والأسواق الحرة", price: 300 },
-    { label: "قيمة رسم الاتحاد العام للغرف", price: 250 },
-    { label: "قيمة رسم التوثيق", price: 400 },
-  ];
-
-  // Payment history data for step 3
-  const paymentHistoryData = [
-    {
-      id: 1,
-      paymentNumber: "9871789",
-      beneficiary: "الهيئة العامة للاستثمار",
-      date: "25/5/2025",
-      status: "success" as const,
-      amount: 5000,
-    },
-    {
-      id: 2,
-      paymentNumber: "9871790",
-      beneficiary: "الهيئة العامة للاستثمار",
-      date: "30/5/2025",
-      status: "pending" as const,
-      amount: 7500,
-    },
-    {
-      id: 3,
-      paymentNumber: "9871791",
-      beneficiary: "الهيئة العامة للاستثمار",
-      date: "01/6/2025",
-      status: "failed" as const,
-      amount: 10000,
-    },
-    {
-      id: 4,
-      paymentNumber: "9871792",
-      beneficiary: "الهيئة العامة للاستثمار",
-      date: "05/6/2025",
-      status: "success" as const,
-      amount: 3000,
-    },
-  ];
-
-  // Step configurations
-  const stepConfigs = {
-    1: {
-      title: "بيانات الشركة",
-      subtitle: "يرجى إدخال بيانات الشركة",
-    },
-    2: {
-      title: "بيانات المؤسسين",
-      subtitle: "يرجى إدخال بيانات المؤسسين",
-    },
-    3: {
-      title: "سجل المدفوعات",
-      subtitle: "عرض المدفوعات السابقة",
-    },
-    4: {
-      title: "دفع رسوم العقد",
-      subtitle: "من فضلك قم بدفع الرسوم المطلوبة لأتمام عملية الأستخراج",
-    },
-    5: {
-      title: "تم الإرسال",
-      subtitle: "تم إرسال الطلب بنجاح",
-    },
-  };
 
   // Company type options
   const companyTypeOptions = [
@@ -178,136 +102,139 @@ export default function FormEntry() {
       setFormErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
-
+  const [form] = Form.useForm();
   return (
-    <div style={styles.formContainer}>
-      {/* Row 1: Company Name */}
-      <div style={styles.formRow}>
-        <div style={styles.formField}>
-          <Parcel
-            config={FormLabelParcel}
-            mountParcel={mountRootParcel}
-            required
-            htmlFor="companyName"
+    <>
+      <div style={styles.formContainer}>
+        <Form
+          initialValues={formData}
+          form={form}
+          name="basic"
+          layout="vertical"
+        >
+          <Form.Item
+            name="companyName"
+            label="أدخل اسم الشركة"
+            rules={[
+              { required: true },
+              {
+                min: 3,
+              },
+            ]}
           >
-            اسم الشركة
-          </Parcel>
-          <Parcel
-            config={FormInputParcel}
-            mountParcel={mountRootParcel}
-            id="companyName"
-            value={formData.companyName}
-            onChange={(value: string) =>
-              handleFieldChange("companyName", value)
-            }
-            placeholder="أدخل اسم الشركة"
-            error={formTouched.companyName ? formErrors.companyName : undefined}
-            disabled={isReadonly}
-          />
-        </div>
-      </div>
+            <Parcel
+              config={FormInputParcel}
+              mountParcel={mountRootParcel}
+              onChange={(value: string) =>
+                handleFieldChange("companyName", value)
+              }
+              placeholder="أدخل اسم الشركة"
+            />
+          </Form.Item>
 
-      {/* Row 2: Company Type & Activity Type */}
-      <div style={styles.formRow}>
-        <div style={styles.formField}>
-          <Parcel
-            config={FormLabelParcel}
-            mountParcel={mountRootParcel}
-            required
-            htmlFor="companyType"
+          <Form.Item
+            label="اختر نوع الشركة"
+            name="companyType"
+            rules={[
+              {
+                required: true,
+              },
+            ]}
           >
-            نوع الشركة
-          </Parcel>
-          <Parcel
-            config={FormSelectParcel}
-            mountParcel={mountRootParcel}
-            id="companyType"
-            value={formData.companyType}
-            onChange={(value: string) =>
-              handleFieldChange("companyType", value)
-            }
-            options={companyTypeOptions}
-            placeholder="اختر نوع الشركة"
-            error={formTouched.companyType ? formErrors.companyType : undefined}
-            disabled={isReadonly}
-          />
-        </div>
-        <div style={styles.formField}>
-          <Parcel
-            config={FormLabelParcel}
-            mountParcel={mountRootParcel}
-            required
-            htmlFor="activityType"
-          >
-            نوع النشاط
-          </Parcel>
-          <Parcel
-            config={FormSelectParcel}
-            mountParcel={mountRootParcel}
-            id="activityType"
-            value={formData.activityType}
-            onChange={(value: string) =>
-              handleFieldChange("activityType", value)
-            }
-            options={activityTypeOptions}
-            placeholder="اختر نوع النشاط"
-            error={
-              formTouched.activityType ? formErrors.activityType : undefined
-            }
-            disabled={isReadonly}
-          />
-        </div>
-      </div>
+            <Parcel
+              config={FormSelectParcel}
+              mountParcel={mountRootParcel}
+              value={formData.companyType}
+              onChange={(value: string) =>
+                handleFieldChange("companyType", value)
+              }
+              options={companyTypeOptions}
+              placeholder="اختر نوع الشركة"
+              error={
+                formTouched.companyType ? formErrors.companyType : undefined
+              }
+              disabled={isReadonly}
+            />
+          </Form.Item>
 
-      {/* Row 3: Commercial Register & Capital */}
-      <div style={styles.formRow}>
-        <div style={styles.formField}>
-          <Parcel
-            config={FormLabelParcel}
-            mountParcel={mountRootParcel}
-            required
-            htmlFor="commercialRegister"
+          <Form.Item
+            name="activityType"
+            label="اختر نوع النشاط"
+            rules={[
+              {
+                required: true,
+              },
+            ]}
           >
-            رقم السجل التجاري
-          </Parcel>
-          <Parcel
-            config={FormInputParcel}
-            mountParcel={mountRootParcel}
-            id="commercialRegister"
-            value={formData.commercialRegister}
-            onChange={(value: string) =>
-              handleFieldChange("commercialRegister", value)
-            }
-            placeholder="أدخل رقم السجل التجاري"
-            error={
-              formTouched.commercialRegister
-                ? formErrors.commercialRegister
-                : undefined
-            }
-            disabled={isReadonly}
-          />
-        </div>
-        <div style={styles.formField}>
-          <Parcel
-            config={FormLabelParcel}
-            mountParcel={mountRootParcel}
-            required
-            htmlFor="capital"
+            <Parcel
+              config={FormSelectParcel}
+              mountParcel={mountRootParcel}
+              value={formData.activityType}
+              placeholder="اختر نوع النشاط"
+              onChange={(value: string) =>
+                handleFieldChange("activityType", value)
+              }
+              options={activityTypeOptions}
+              error={
+                formTouched.activityType ? formErrors.activityType : undefined
+              }
+              disabled={isReadonly}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="commercialRegister"
+            label="أدخل رقم السجل التجاري"
+            rules={[
+              {
+                required: true,
+              },
+              {
+                type: "number",
+              },
+            ]}
           >
-            رأس المال (جنيه مصري)
-          </Parcel>
-          <Parcel
-            config={FormInputParcel}
-            mountParcel={mountRootParcel}
-            id="capital"
-            value={formData.capital}
-            onChange={(value: string) => handleFieldChange("capital", value)}
-            placeholder="أدخل رأس المال"
-            error={formTouched.capital ? formErrors.capital : undefined}
-            disabled={isReadonly}
-          />
-        </div>
+            <Parcel
+              config={FormInputParcel}
+              mountParcel={mountRootParcel}
+              placeholder="أدخل رقم السجل التجاري"
+              value={formData.commercialRegister}
+              onChange={(value: string) =>
+                handleFieldChange("commercialRegister", value)
+              }
+              error={
+                formTouched.commercialRegister
+                  ? formErrors.commercialRegister
+                  : undefined
+              }
+              disabled={isReadonly}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="capital"
+            label="أدخل رأس المال"
+            rules={[
+              {
+                required: true,
+              },
+              {
+                type: "number",
+              },
+            ]}
+          >
+            <Parcel
+              config={FormInputParcel}
+              mountParcel={mountRootParcel}
+              placeholder="أدخل رأس المال"
+              value={formData.capital}
+              onChange={(value: string) => handleFieldChange("capital", value)}
+              error={formTouched.capital ? formErrors.capital : undefined}
+              disabled={isReadonly}
+            />
+          </Form.Item>
+        </Form>
       </div>
-    </div>
+    </>
   );
 }
