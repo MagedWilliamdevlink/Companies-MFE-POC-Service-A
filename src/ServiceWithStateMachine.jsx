@@ -7,18 +7,20 @@ import { useMemo } from "react";
 
 import { VerticalStepperParcel, ButtonParcel } from "./shared-ui";
 import { styles } from "./styles";
-import { Form } from "antd";
+import { Checkbox, Form } from "antd";
 import { getRequestID, getRequest, updateRequestStep } from "./requestStorage";
 
 // Steps configuration
 const steps = [
   {
     id: "formEntry",
+    completeOn: "isFormValid",
     title: "بيانات الشركة",
     subtitle: "يرجى إدخال بيانات الشركة",
   },
   {
     id: "awaitingReview",
+    completeOn: "isReviewed",
     title: "بيانات المؤسسين",
     subtitle: "يرجى إدخال بيانات المؤسسين",
   },
@@ -29,11 +31,21 @@ const steps = [
   },
   {
     id: "paymentSuccess",
+    completeOn: "isPaymentCompleted",
     title: "دفع رسوم العقد",
     subtitle: "من فضلك قم بدفع الرسوم المطلوبة لأتمام عملية الأستخراج",
   },
-  { id: "shippingAddress", title: "الخطوة الخامسة" },
-  { id: "completed", title: "تم الإرسال", subtitle: "تم إرسال الطلب بنجاح" },
+  {
+    id: "shippingAddress",
+    completeOn: "isShippingValid",
+    title: "الخطوة الخامسة",
+  },
+  {
+    id: "completed",
+    completeOn: "isRequestComplete",
+    title: "تم الإرسال",
+    subtitle: "تم إرسال الطلب بنجاح",
+  },
 ];
 
 export default function ServiceComponent() {
@@ -61,6 +73,9 @@ export default function ServiceComponent() {
 
   let CurrentStepOrder = 0;
   const stepsWithStatus = steps.map((s, idx) => {
+    if (state.context[s.completeOn] === true) {
+      return { ...s, status: "finish" };
+    }
     if (s.id === state.value) {
       CurrentStepOrder = idx;
       return { ...s, status: "current" };
@@ -125,7 +140,31 @@ export default function ServiceComponent() {
 
             {inFormEntry && <FormEntry form={form} />}
 
-            {inAwaitingReview && <>Waiting for Application to be Reviewed</>}
+            {inAwaitingReview && (
+              <>
+                Waiting for Application to be Reviewed
+                <Form form={form} name="verificationStep">
+                  <Form.Item
+                    name={["verificationStep", "verified"]}
+                    label="verify"
+                    valuePropName="checked"
+                    rules={[
+                      { required: true },
+                      {
+                        validator: (_, value) => {
+                          if (value === true) {
+                            return Promise.resolve();
+                          }
+                          return Promise.reject("يجب إدخال رقم صحيح");
+                        },
+                      },
+                    ]}
+                  >
+                    <Checkbox />
+                  </Form.Item>
+                </Form>
+              </>
+            )}
 
             {inBillingSummary && <>Application approved, heres the bill</>}
 

@@ -12,6 +12,7 @@ const stateMachine = setup({
       isPaymentVerified: boolean;
       isShippingValid: boolean;
       isShippingInvalid: boolean;
+      isRequestComplete: boolean;
     },
     events: {} as
       | { type: "PAYMENT_SUCCEEDED" }
@@ -29,6 +30,9 @@ const stateMachine = setup({
     },
     isReviewed: ({ context, event }) => {
       // Add your guard condition here
+      if (event.type === "NEXT" && event?.validStep) {
+        return true;
+      }
       return false;
     },
     isReviewPending: ({ context, event }) => {
@@ -66,6 +70,7 @@ const stateMachine = setup({
     isPaymentVerified: false,
     isShippingValid: false,
     isShippingInvalid: false,
+    isRequestComplete: false,
   },
   id: "checkoutWorkflow",
   initial: "formEntry",
@@ -99,6 +104,9 @@ const stateMachine = setup({
             guard: {
               type: "isReviewed",
             },
+            actions: assign({
+              isReviewed: true,
+            }),
           },
           {
             target: "awaitingReview",
@@ -118,6 +126,9 @@ const stateMachine = setup({
             guard: {
               type: "isPaymentCompleted",
             },
+            actions: assign({
+              isPaymentCompleted: true,
+            }),
           },
           {
             target: "externalPayment",
@@ -136,6 +147,12 @@ const stateMachine = setup({
       on: {
         NEXT: {
           target: "shippingAddress",
+          guard: {
+            type: "isShippingValid",
+          },
+          actions: assign({
+            isPaymentCompleted: true,
+          }),
         },
         PREVIOUS: {
           target: "billingSummary",
