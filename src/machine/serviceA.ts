@@ -1,4 +1,4 @@
-import { createActor, setup, transition } from "xstate";
+import { assign, createActor, setup, transition } from "xstate";
 import { getSavedRequestById } from "../requestStorage";
 
 const stateMachine = setup({
@@ -21,6 +21,7 @@ const stateMachine = setup({
   },
   guards: {
     isFormValid: ({ context, event }) => {
+      console.log(event);
       if (event.type === "NEXT" && event?.validStep) {
         return true;
       }
@@ -77,6 +78,9 @@ const stateMachine = setup({
             guard: {
               type: "isFormValid",
             },
+            actions: assign({
+              isFormValid: true,
+            }),
             description: "if the form is valid, move to the next step",
           },
           {
@@ -196,7 +200,11 @@ export function predictNextTurnAction(predictionStateMachine) {
   }
 }
 
-export const checkoutMachine = createActor(stateMachine).start();
-
-export const predicatedNextState: string =
-  predictNextTurnAction(checkoutMachine);
+// Function to create the checkout machine actor with optional snapshot restoration
+export function createCheckoutMachine(snapshot?: any) {
+  console.log("snapshot", snapshot);
+  if (snapshot) {
+    return createActor(stateMachine, { snapshot }).start();
+  }
+  return createActor(stateMachine).start();
+}

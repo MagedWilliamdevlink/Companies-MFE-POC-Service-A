@@ -1,13 +1,14 @@
 import { useSelector } from "@xstate/react";
 import Parcel from "single-spa-react/parcel";
-import { checkoutMachine } from "./machine/serviceA";
+import { createCheckoutMachine } from "./machine/serviceA";
 import FormEntry from "./service/formEntry";
 import { mountRootParcel } from "single-spa";
+import { useMemo } from "react";
 
 import { VerticalStepperParcel, ButtonParcel } from "./shared-ui";
 import { styles } from "./styles";
 import { Form } from "antd";
-import { getRequestID, updateRequestStep } from "./requestStorage";
+import { getRequestID, getRequest, updateRequestStep } from "./requestStorage";
 
 // Steps configuration
 const steps = [
@@ -36,6 +37,16 @@ const steps = [
 ];
 
 export default function ServiceComponent() {
+  const requestID = getRequestID();
+  const initialRequest = getRequest(requestID);
+
+  // Create the machine actor with stored snapshot if available
+  const checkoutMachine = useMemo(() => {
+    const storedSnapshot = initialRequest?.machineSnapshot;
+    // Only use snapshot if it exists and is not null
+    return createCheckoutMachine(storedSnapshot || undefined);
+  }, [initialRequest?.machineSnapshot]);
+
   // useSelector tells React to re-render whenever the actor's state changes
   const state = useSelector(checkoutMachine, (snapshot) => snapshot);
 
@@ -63,18 +74,19 @@ export default function ServiceComponent() {
 
   const [form] = Form.useForm();
 
-  const requestID = getRequestID();
-
   const handleNext = () => {
     form
       .validateFields(true)
       .then((v) => {
-        updateRequestStep(requestID, state.value, v, state);
-        const moveMachineToNextStep = checkoutMachine.send({
+        // Send the event to update the machine context first
+        checkoutMachine.send({
           type: "NEXT",
           validStep: true,
         });
-        console.log(moveMachineToNextStep);
+        // Get the updated state after the event is processed
+        const updatedState = checkoutMachine.getSnapshot();
+        // Store the snapshot with updated context
+        updateRequestStep(requestID, updatedState.value, v, updatedState);
       })
       .catch((e) => {
         console.log("validation error", e);
@@ -106,10 +118,10 @@ export default function ServiceComponent() {
 
           {/* ------ Content Body ------ */}
           <div style={styles.contentBody}>
-            {/* <details>
+            <details>
               <summary>Current Step: {String(state.value)}</summary>
               <pre>{JSON.stringify(state.context, null, 2)}</pre>
-            </details>*/}
+            </details>
 
             {inFormEntry && <FormEntry form={form} />}
 
