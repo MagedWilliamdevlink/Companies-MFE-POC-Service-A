@@ -2,14 +2,19 @@ import { useSelector } from "@xstate/react";
 import Parcel from "single-spa-react/parcel";
 import { createCheckoutMachine } from "./machine/serviceA";
 import FormEntry from "./service/formEntry";
+import AwaitingReview from "./service/AwaitingReview";
+import BillingSummary from "./service/BillingSummary";
+import PaymentSuccess from "./service/PaymentSuccess";
+import ExternalPayment from "./service/ExternalPayment";
+import ShippingAddress from "./service/ShippingAddress";
+import Completed from "./service/Completed";
 import { mountRootParcel } from "single-spa";
 import { useMemo } from "react";
 
 import { VerticalStepperParcel, ButtonParcel } from "./shared-ui";
 import { styles } from "./styles";
-import { Checkbox, Form } from "antd";
+import { Form } from "antd";
 import { getRequestID, getRequest, updateRequestStep } from "./requestStorage";
-import TextArea from "antd/es/input/TextArea";
 
 // Steps configuration
 const steps = [
@@ -91,6 +96,14 @@ export default function ServiceComponent() {
 
   const [form] = Form.useForm();
 
+  const handlePrevious = () => {
+    console.log("must go back");
+    checkoutMachine.send({ type: "PREVIOUS" });
+    const updatedState = checkoutMachine.getSnapshot();
+    // Store the snapshot with updated context
+    updateRequestStep(requestID, updatedState.value, {}, updatedState);
+  };
+
   const handleNext = () => {
     form
       .validateFields(true)
@@ -110,6 +123,7 @@ export default function ServiceComponent() {
         console.log("validation error", e);
       });
   };
+
   return (
     <div style={styles.wrapper}>
       {/* ====== SIDEBAR with VerticalStepper ====== */}
@@ -145,181 +159,27 @@ export default function ServiceComponent() {
 
             {inAwaitingReview && (
               <>
-                Waiting for Application to be Reviewed
-                <Form form={form} name="verificationStep">
-                  <Form.Item
-                    name={["verificationStep", "verified"]}
-                    label="verify"
-                    valuePropName="checked"
-                    rules={[
-                      { required: true },
-                      {
-                        validator: (_, value) => {
-                          if (value === true) {
-                            return Promise.resolve();
-                          }
-                          return Promise.reject("يجب إدخال رقم صحيح");
-                        },
-                      },
-                    ]}
-                  >
-                    <Checkbox />
-                  </Form.Item>
-                </Form>
+                <FormEntry form={form} isReadonly={true} />
+                <AwaitingReview form={form} />
               </>
             )}
 
-            {inBillingSummary && (
-              <>
-                Application approved, heres the bill
-                <Form
-                  form={form}
-                  initialValues={{
-                    inBillingSummary: {
-                      table: [
-                        {
-                          name: "item1",
-                          price: "00.0000000000",
-                        },
-                        {
-                          name: "item2",
-                          price: "000.000000000",
-                        },
-                      ],
-                    },
-                  }}
-                />
-              </>
-            )}
+            {inBillingSummary && <BillingSummary form={form} />}
 
-            {inPaymentSuccess && (
-              <>
-                payment successful
-                <Form
-                  form={form}
-                  initialValues={{
-                    inBillingSummary: {
-                      table: [
-                        {
-                          name: "item1",
-                          price: "00.0000000000",
-                        },
-                        {
-                          name: "item2",
-                          price: "000.000000000",
-                        },
-                      ],
-                    },
-                  }}
-                />
-              </>
-            )}
+            {inPaymentSuccess && <PaymentSuccess form={form} />}
 
             {inExternalPayment && (
-              <>
-                we are now in efiniance land
-                <Form
-                  form={form}
-                  initialValues={{
-                    inBillingSummary: {
-                      table: [
-                        {
-                          name: "item1",
-                          price: "00.0000000000",
-                        },
-                        {
-                          name: "item2",
-                          price: "000.000000000",
-                        },
-                      ],
-                    },
-                  }}
-                >
-                  <Parcel
-                    config={ButtonParcel}
-                    mountParcel={mountRootParcel}
-                    size={"sm"}
-                    variant={"outline"}
-                    fullWidth={false}
-                    className={"w-fit"}
-                    onClick={() => {
-                      console.log(
-                        "Before PAYMENT_SUCCEEDED:",
-                        "Current state:",
-                        state.value,
-                        "Can send PAYMENT_SUCCEEDED:",
-                        state.can({ type: "PAYMENT_SUCCEEDED" })
-                      );
-                      checkoutMachine.send({ type: "PAYMENT_SUCCEEDED" });
-                      // Get the updated state after the event is processed
-                      const updatedState = checkoutMachine.getSnapshot();
-                      console.log(
-                        "After PAYMENT_SUCCEEDED:",
-                        "New state:",
-                        updatedState.value,
-                        "Context:",
-                        updatedState.context
-                      );
-                      // Store the snapshot with updated context
-                      updateRequestStep(
-                        requestID,
-                        updatedState.value,
-                        {},
-                        updatedState
-                      );
-                    }}
-                  >
-                    Pay (success)
-                  </Parcel>
-                  <Parcel
-                    config={ButtonParcel}
-                    mountParcel={mountRootParcel}
-                    size={"sm"}
-                    variant={"outline"}
-                    fullWidth={false}
-                    className={"w-fit"}
-                    onClick={() => {
-                      checkoutMachine.send({ type: "PAYMENT_FAILED" });
-                      // Get the updated state after the event is processed
-                      const updatedState = checkoutMachine.getSnapshot();
-                      // Store the snapshot with updated context
-                      updateRequestStep(
-                        requestID,
-                        updatedState.value,
-                        {},
-                        updatedState
-                      );
-                    }}
-                  >
-                    Pay (fails)
-                  </Parcel>
-                </Form>
-              </>
+              <ExternalPayment
+                form={form}
+                requestID={requestID}
+                state={state}
+                checkoutMachine={checkoutMachine}
+              />
             )}
 
-            {inShippingAddress && (
-              <>
-                now enter you address to ship the thing
-                <Form form={form} layout="vertical">
-                  <Form.Item
-                    name={["shipping", "address"]}
-                    label={"shipping Address"}
-                    rules={[
-                      {
-                        required: true,
-                      },
-                      {
-                        min: 10,
-                      },
-                    ]}
-                  >
-                    <TextArea></TextArea>
-                  </Form.Item>
-                </Form>
-              </>
-            )}
+            {inShippingAddress && <ShippingAddress form={form} />}
 
-            {inCompleted && <>the request is completed</>}
+            {inCompleted && <Completed />}
             <br />
 
             <div className="flex gap-2 justify-end px-3">
@@ -331,18 +191,7 @@ export default function ServiceComponent() {
                   variant={"outline"}
                   fullWidth={false}
                   className={"w-fit"}
-                  onClick={() => {
-                    console.log("must go back");
-                    checkoutMachine.send({ type: "PREVIOUS" });
-                    const updatedState = checkoutMachine.getSnapshot();
-                    // Store the snapshot with updated context
-                    updateRequestStep(
-                      requestID,
-                      updatedState.value,
-                      {},
-                      updatedState
-                    );
-                  }}
+                  onClick={handlePrevious}
                 >
                   الرجوع
                 </Parcel>

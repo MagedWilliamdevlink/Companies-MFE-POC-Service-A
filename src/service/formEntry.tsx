@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Parcel from "single-spa-react/parcel";
 import { mountRootParcel } from "single-spa";
-import { Form } from "antd";
+import { Form, Input } from "antd";
 import {
   VerticalStepperParcel,
   NavigationButtonsParcel,
@@ -20,7 +20,7 @@ interface FormErrors {
   capital?: string;
 }
 
-export default function FormEntry({ form }) {
+export default function FormEntry({ form, isReadonly = false }) {
   // Import shared UI - all parcels ready to use
 
   // Form state for step 1
@@ -35,7 +35,6 @@ export default function FormEntry({ form }) {
   const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
   const lastProcessedRequestIdRef = useRef<string | null>(null);
   const formDataRef = useRef(formData);
-  const [isReadonly, setIsReadonly] = useState(false);
 
   // ==========================================
   // DATA - service-a controls the data
@@ -106,6 +105,7 @@ export default function FormEntry({ form }) {
     <>
       <div style={styles.formContainer}>
         <Form
+          disabled={isReadonly}
           initialValues={{
             formEntry: {
               companyName: "xyz",
@@ -121,17 +121,22 @@ export default function FormEntry({ form }) {
         >
           <Form.Item
             name={["formEntry", "companyName"]}
-            label="أدخل اسم الشركة"
-            rules={[
-              { required: true },
-              {
-                min: 3,
-              },
-            ]}
+            label="اسم الشركة"
+            rules={
+              isReadonly
+                ? []
+                : [
+                    { required: true },
+                    {
+                      min: 3,
+                    },
+                  ]
+            }
           >
             <Parcel
               config={FormInputParcel}
               mountParcel={mountRootParcel}
+              disabled={isReadonly}
               onChange={(value: string) =>
                 handleFieldChange("companyName", value)
               }
@@ -140,13 +145,17 @@ export default function FormEntry({ form }) {
           </Form.Item>
 
           <Form.Item
-            label="اختر نوع الشركة"
+            label="نوع الشركة"
             name={["formEntry", "companyType"]}
-            rules={[
-              {
-                required: true,
-              },
-            ]}
+            rules={
+              isReadonly
+                ? []
+                : [
+                    {
+                      required: true,
+                    },
+                  ]
+            }
           >
             <Parcel
               config={FormSelectParcel}
@@ -166,12 +175,16 @@ export default function FormEntry({ form }) {
 
           <Form.Item
             name={["formEntry", "activityType"]}
-            label="اختر نوع النشاط"
-            rules={[
-              {
-                required: true,
-              },
-            ]}
+            label="نوع النشاط"
+            rules={
+              isReadonly
+                ? []
+                : [
+                    {
+                      required: true,
+                    },
+                  ]
+            }
           >
             <Parcel
               config={FormSelectParcel}
@@ -191,28 +204,32 @@ export default function FormEntry({ form }) {
 
           <Form.Item
             name={["formEntry", "commercialRegister"]}
-            label="أدخل رقم السجل التجاري"
-            rules={[
-              {
-                required: true,
-              },
-              {
-                validator: (_, value) => {
-                  if (!value) return Promise.resolve();
+            label="رقم السجل التجاري"
+            rules={
+              isReadonly
+                ? []
+                : [
+                    {
+                      required: true,
+                    },
+                    {
+                      validator: (_, value) => {
+                        if (!value) return Promise.resolve();
 
-                  if (isNaN(Number(value))) {
-                    return Promise.reject("يجب إدخال رقم صحيح");
-                  }
+                        if (isNaN(Number(value))) {
+                          return Promise.reject("يجب إدخال رقم صحيح");
+                        }
 
-                  return Promise.resolve();
-                },
-              },
-            ]}
+                        return Promise.resolve();
+                      },
+                    },
+                  ]
+            }
           >
             <Parcel
               config={FormInputParcel}
               mountParcel={mountRootParcel}
-              placeholder="أدخل رقم السجل التجاري"
+              placeholder="رقم السجل التجاري"
               value={formData.commercialRegister}
               onChange={(value: string) =>
                 handleFieldChange("commercialRegister", value)
@@ -228,21 +245,25 @@ export default function FormEntry({ form }) {
 
           <Form.Item
             name={["formEntry", "capital"]}
-            label="أدخل رأس المال"
-            rules={[
-              { required: true, message: "رأس المال مطلوب" },
-              {
-                validator: (_, value) => {
-                  if (!value) return Promise.resolve();
+            label="رأس المال"
+            rules={
+              isReadonly
+                ? []
+                : [
+                    { required: true, message: "رأس المال مطلوب" },
+                    {
+                      validator: (_, value) => {
+                        if (!value) return Promise.resolve();
 
-                  if (isNaN(Number(value))) {
-                    return Promise.reject("يجب إدخال رقم صحيح");
-                  }
+                        if (isNaN(Number(value))) {
+                          return Promise.reject("يجب إدخال رقم صحيح");
+                        }
 
-                  return Promise.resolve();
-                },
-              },
-            ]}
+                        return Promise.resolve();
+                      },
+                    },
+                  ]
+            }
           >
             <Parcel
               config={FormInputParcel}
