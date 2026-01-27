@@ -1,0 +1,233 @@
+import React, { useState } from "react";
+import Parcel from "single-spa-react/parcel";
+import { mountRootParcel } from "single-spa";
+import { Form } from "antd";
+import { FormInputParcel, FormSelectParcel } from "../shared-ui";
+import { styles } from "../styles";
+
+interface FormErrors {
+  companyName?: string;
+  companyType?: string;
+  activityType?: string;
+  commercialRegister?: string;
+  capital?: string;
+}
+
+export default function FormEntry({ form, request, isReadonly = false }) {
+  // Import shared UI - all parcels ready to use
+
+  // Form state for step 1
+  const [formData, setFormData] = useState({
+    companyName: "",
+    companyType: undefined as string | undefined,
+    activityType: undefined as string | undefined,
+    commercialRegister: "",
+    capital: "",
+  });
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
+
+  // ==========================================
+  // DATA - service-a controls the data
+  // ==========================================
+
+  // Company type options
+  const companyTypeOptions = [
+    { label: "شركة ذات مسئولية محدودة", value: "llc" },
+    { label: "شركة مساهمة", value: "joint_stock" },
+    { label: "شركة تضامنية", value: "partnership" },
+    { label: "شركة توصية بسيطة", value: "limited_partnership" },
+  ];
+
+  // Activity type options
+  const activityTypeOptions = [
+    { label: "تجارة عامة", value: "general_trade" },
+    { label: "صناعة", value: "manufacturing" },
+    { label: "خدمات", value: "services" },
+    { label: "استثمار عقاري", value: "real_estate" },
+    { label: "تكنولوجيا المعلومات", value: "it" },
+  ];
+
+  // Handle field change
+  const handleFieldChange = (field: string, value: string | number) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormTouched((prev) => ({ ...prev, [field]: true }));
+
+    // Clear error when user starts typing
+    if (formErrors[field as keyof FormErrors]) {
+      setFormErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+  return (
+    <>
+      <div style={styles.formContainer}>
+        <Form
+          disabled={isReadonly}
+          initialValues={{
+            ...request?.formEntry,
+          }}
+          form={form}
+          name="formEntry"
+          layout="vertical"
+        >
+          <Form.Item
+            name={["formEntry", "companyName"]}
+            label="اسم الشركة"
+            rules={
+              isReadonly
+                ? []
+                : [
+                    { required: true },
+                    {
+                      min: 3,
+                    },
+                  ]
+            }
+          >
+            <Parcel
+              config={FormInputParcel}
+              mountParcel={mountRootParcel}
+              disabled={isReadonly}
+              onChange={(value: string) =>
+                handleFieldChange("companyName", value)
+              }
+              placeholder="أدخل اسم الشركة"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="نوع الشركة"
+            name={["formEntry", "companyType"]}
+            rules={
+              isReadonly
+                ? []
+                : [
+                    {
+                      required: true,
+                    },
+                  ]
+            }
+          >
+            <Parcel
+              config={FormSelectParcel}
+              mountParcel={mountRootParcel}
+              value={formData.companyType}
+              onChange={(value: string) =>
+                handleFieldChange("companyType", value)
+              }
+              options={companyTypeOptions}
+              placeholder="اختر نوع الشركة"
+              error={
+                formTouched.companyType ? formErrors.companyType : undefined
+              }
+              disabled={isReadonly}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name={["formEntry", "activityType"]}
+            label="نوع النشاط"
+            rules={
+              isReadonly
+                ? []
+                : [
+                    {
+                      required: true,
+                    },
+                  ]
+            }
+          >
+            <Parcel
+              config={FormSelectParcel}
+              mountParcel={mountRootParcel}
+              value={formData.activityType}
+              placeholder="اختر نوع النشاط"
+              onChange={(value: string) =>
+                handleFieldChange("activityType", value)
+              }
+              options={activityTypeOptions}
+              error={
+                formTouched.activityType ? formErrors.activityType : undefined
+              }
+              disabled={isReadonly}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name={["formEntry", "commercialRegister"]}
+            label="رقم السجل التجاري"
+            rules={
+              isReadonly
+                ? []
+                : [
+                    {
+                      required: true,
+                    },
+                    {
+                      validator: (_, value) => {
+                        if (!value) return Promise.resolve();
+
+                        if (isNaN(Number(value))) {
+                          return Promise.reject("يجب إدخال رقم صحيح");
+                        }
+
+                        return Promise.resolve();
+                      },
+                    },
+                  ]
+            }
+          >
+            <Parcel
+              config={FormInputParcel}
+              mountParcel={mountRootParcel}
+              placeholder="رقم السجل التجاري"
+              value={formData.commercialRegister}
+              onChange={(value: string) =>
+                handleFieldChange("commercialRegister", value)
+              }
+              error={
+                formTouched.commercialRegister
+                  ? formErrors.commercialRegister
+                  : undefined
+              }
+              disabled={isReadonly}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name={["formEntry", "capital"]}
+            label="رأس المال"
+            rules={
+              isReadonly
+                ? []
+                : [
+                    { required: true, message: "رأس المال مطلوب" },
+                    {
+                      validator: (_, value) => {
+                        if (!value) return Promise.resolve();
+
+                        if (isNaN(Number(value))) {
+                          return Promise.reject("يجب إدخال رقم صحيح");
+                        }
+
+                        return Promise.resolve();
+                      },
+                    },
+                  ]
+            }
+          >
+            <Parcel
+              config={FormInputParcel}
+              mountParcel={mountRootParcel}
+              placeholder="أدخل رأس المال"
+              value={formData.capital}
+              onChange={(value: string) => handleFieldChange("capital", value)}
+              error={formTouched.capital ? formErrors.capital : undefined}
+              disabled={isReadonly}
+            />
+          </Form.Item>
+        </Form>
+      </div>
+    </>
+  );
+}

@@ -2,17 +2,23 @@
 // This avoids repetitive System.import().then() patterns
 
 // Cache the loading promise to avoid multiple imports
-let loadingPromise: Promise<any> | null = null;
+let loadingPromise = null;
 
-function getSharedUi(): Promise<any> {
+function getSharedUi() {
   if (!loadingPromise) {
     loadingPromise = System.import("@shared-ui/shared-ui");
   }
   return loadingPromise;
 }
 
+export const sharedUIPromise = () => getSharedUi().then((m) => m);
+
+
 // Export individual parcel loaders - clean and reusable
-export const ButtonParcel = () => getSharedUi().then((m) => m.ButtonParcel);
+// These can be imported like normal imports and used directly with Single-SPA Parcel components
+export const ButtonParcel = () => getSharedUi().then((m) => {
+  return m.ButtonParcel
+});
 export const VerticalStepperParcel = () =>
   getSharedUi().then((m) => m.VerticalStepperParcel);
 export const NavigationButtonsParcel = () =>
@@ -20,7 +26,6 @@ export const NavigationButtonsParcel = () =>
 export const ServicePageLayoutParcel = () =>
   getSharedUi().then((m) => m.ServicePageLayoutParcel);
 
-// Form components
 export const FormLabelParcel = () =>
   getSharedUi().then((m) => m.FormLabelParcel);
 export const FormInputParcel = () =>
@@ -31,3 +36,6 @@ export const FormSelectParcel = () =>
 // Table component
 export const PaymentTableParcel = () =>
   getSharedUi().then((m) => m.PaymentTableParcel);
+
+// Export form utilities if needed
+export const form = () => getSharedUi().then((m) => m.form);
