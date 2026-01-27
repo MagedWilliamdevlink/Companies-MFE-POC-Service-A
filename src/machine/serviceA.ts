@@ -130,9 +130,6 @@ const stateMachine = setup({
         },
         PAYMENT_FAILED: {
           target: "billingSummary",
-          actions: assign({
-            isPaymentCompleted: false,
-          }),
         },
       },
       description: "Generate url from provider, user proceeds to pay",

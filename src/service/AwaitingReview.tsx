@@ -1,10 +1,19 @@
 import { Checkbox, Form } from "antd";
 
-export default function AwaitingReview({ form }) {
+export default function AwaitingReview({ form, state }) {
+  const alreadyVerified = state.context.isReviewed;
   return (
     <>
       Waiting for Application to be Reviewed
-      <Form form={form} name="verificationStep">
+      <Form
+        form={form}
+        name="verificationStep"
+        initialValues={{
+          verificationStep: {
+            verified: alreadyVerified,
+          },
+        }}
+      >
         <Form.Item
           name={["verificationStep", "verified"]}
           label="verify"
