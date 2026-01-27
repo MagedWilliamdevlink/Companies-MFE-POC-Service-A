@@ -89,7 +89,7 @@ const stateMachine = setup({
       on: {
         NEXT: [
           {
-            target: "billingSummary",
+            target: "paymentRequired",
             guard: {
               type: "isReviewed",
             },
@@ -104,16 +104,16 @@ const stateMachine = setup({
       },
       description: "Show submit was successful, waiting for reviewer",
     },
-    billingSummary: {
+    paymentRequired: {
       on: {
         PAYMENT_SUCCEEDED: {
-          target: "paymentSuccess",
+          target: "shippingRequired",
           actions: assign({
             isPaymentCompleted: true,
           }),
         },
         PAYMENT_FAILED: {
-          target: "billingSummary",
+          target: "paymentRequired",
         },
         PREVIOUS: {
           target: "awaitingReview",
@@ -131,13 +131,13 @@ const stateMachine = setup({
             },
           },
           {
-            target: "shippingAddress",
+            target: "shippingRequired",
           },
         ],
       },
       description: "Show Payment Succeeded with timestamp",
     },
-    shippingAddress: {
+    shippingRequired: {
       on: {
         NEXT: [
           {
@@ -151,7 +151,7 @@ const stateMachine = setup({
             }),
           },
           {
-            target: "shippingAddress",
+            target: "shippingRequired",
           },
         ],
         PREVIOUS: {

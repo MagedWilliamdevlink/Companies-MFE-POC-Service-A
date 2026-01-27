@@ -38,7 +38,7 @@ const paymentHistoryData = [
   },
 ];
 
-export default function BillingSummary({ form }) {
+export default function PaymentRequired({ form }) {
   return (
     <>
       <Parcel

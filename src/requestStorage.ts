@@ -127,11 +127,6 @@ export function updateRequestStep(
   if (machineSnapshot) {
     request.machineSnapshot = machineSnapshot;
   }
-  // console.log(requestId, step, formData, request, machineSnapshot);
-  // Mark previous steps as completed
-  // if (!request.completedSteps.includes(step - 1) && step > 1) {
-  //   request.completedSteps.push(step - 1);
-  // }
 
   saveRequest(request);
 }

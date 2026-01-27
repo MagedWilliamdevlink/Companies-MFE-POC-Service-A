@@ -4,9 +4,8 @@ import { createCheckoutMachine } from "./machine/serviceA";
 import FormEntry from "./service/FormEntry";
 import AwaitingReview from "./service/AwaitingReview";
 import Bill from "./service/Bill";
-import BillingSummary from "./service/BillingSummary";
+import PaymentRequired from "./service/PaymentRequired";
 import PaymentSuccess from "./service/PaymentSuccess";
-import ExternalPayment from "./service/ExternalPayment";
 import ShippingAddress from "./service/ShippingAddress";
 import Completed from "./service/Completed";
 import { mountRootParcel } from "single-spa";
@@ -28,31 +27,31 @@ const steps = [
   {
     id: "awaitingReview",
     completeon: "isReviewed",
-    title: "بيانات المؤسسين",
-    subtitle: "يرجى إدخال بيانات المؤسسين",
+    title: "بانتظار المراجعة",
+    subtitle: "يرجى انتظار المراجعة",
   },
   {
-    id: "billingSummary",
+    id: "paymentRequired",
     completeon: "isPaymentCompleted",
-    title: "ملخص رسوم الخدمة",
+    title: "دفع رسوم الخدمة",
     // title: "سجل المدفوعات",
     subtitle: "عرض المدفوعات السابقة",
   },
   {
     id: "paymentSuccess",
     completeon: "isPaymentCompleted",
-    title: "دفع رسوم العقد",
+    title: "سجل المدفوعات السابقة",
     subtitle: "من فضلك قم بدفع الرسوم المطلوبة لأتمام عملية الأستخراج",
   },
   {
-    id: "shippingAddress",
+    id: "shippingRequired",
     completeon: "isShippingValid",
     title: "عنوان الشحن",
   },
   {
     id: "completed",
     completeon: "isRequestComplete",
-    title: "تم الإرسال",
+    title: "اكتمل الطلب",
     subtitle: "تم إرسال الطلب بنجاح",
   },
 ];
@@ -74,14 +73,14 @@ export default function ServiceComponent() {
   // Now these will update automatically!
   const inFormEntry = state.matches("formEntry");
   const inAwaitingReview = state.matches("awaitingReview");
-  const inBillingSummary = state.matches("billingSummary");
+  const inPaymentRequired = state.matches("paymentRequired");
   const inPaymentSuccess = state.matches("paymentSuccess");
-  const inShippingAddress = state.matches("shippingAddress");
+  const inShippingAddress = state.matches("shippingRequired");
   const inCompleted = state.matches("completed");
 
   let CurrentStepOrder = 0;
   const stepsWithStatus = steps.map((s, idx) => {
-    console.log(state.context[s.completeon], s.id, state.value);
+    // console.log(state.context[s.completeon], s.id, state.value);
     if (s.id === state.value) {
       CurrentStepOrder = idx;
       return { ...s, status: "current" };
@@ -101,6 +100,9 @@ export default function ServiceComponent() {
   const handlePrevious = () => {
     // console.log("must go back");
     checkoutMachine.send({ type: "PREVIOUS" });
+    if (state.value === "completed") {
+      return;
+    }
     const updatedState = checkoutMachine.getSnapshot();
     // Store the snapshot with updated context
     updateRequestStep(requestID, updatedState.value, {}, updatedState);
@@ -116,6 +118,10 @@ export default function ServiceComponent() {
           type: "NEXT",
           validStep: true,
         });
+
+        if (state.value === "completed") {
+          return;
+        }
         // Get the updated state after the event is processed
         const updatedState = checkoutMachine.getSnapshot();
         // Store the snapshot with updated context
@@ -170,7 +176,7 @@ export default function ServiceComponent() {
               </>
             )}
 
-            {inBillingSummary && (
+            {inPaymentRequired && (
               <Bill
                 form={form}
                 requestID={requestID}
@@ -181,7 +187,7 @@ export default function ServiceComponent() {
             {inPaymentSuccess && (
               <>
                 <PaymentSuccess form={form} />
-                <BillingSummary form={form} />
+                <PaymentRequired form={form} />
               </>
             )}
 

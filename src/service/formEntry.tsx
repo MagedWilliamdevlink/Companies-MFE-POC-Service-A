@@ -64,7 +64,7 @@ export default function FormEntry({ form, request, isReadonly = false }) {
         <Form
           disabled={isReadonly}
           initialValues={{
-            ...request.formEntry,
+            ...request?.formEntry,
           }}
           form={form}
           name="formEntry"
