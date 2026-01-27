@@ -26,6 +26,7 @@ const stateMachine = setup({
     isReviewed: ({ context, event }) => {
       // Add your guard condition here
       if (event.type === "NEXT" && event?.validStep) {
+        // fetch to backend
         return true;
       }
       return false;
@@ -119,20 +120,6 @@ const stateMachine = setup({
         },
       },
       description: "if Step1 reviewed, we show bill summary",
-    },
-    externalPayment: {
-      on: {
-        PAYMENT_SUCCEEDED: {
-          target: "paymentSuccess",
-          actions: assign({
-            isPaymentCompleted: true,
-          }),
-        },
-        PAYMENT_FAILED: {
-          target: "billingSummary",
-        },
-      },
-      description: "Generate url from provider, user proceeds to pay",
     },
     paymentSuccess: {
       on: {

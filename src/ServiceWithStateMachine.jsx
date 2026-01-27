@@ -157,11 +157,15 @@ export default function ServiceComponent() {
               <pre>{JSON.stringify(state.context, null, 2)}</pre>
             </details>*/}
 
-            {inFormEntry && <FormEntry form={form} />}
+            {inFormEntry && <FormEntry request={initialRequest} form={form} />}
 
             {inAwaitingReview && (
               <>
-                <FormEntry form={form} isReadonly={true} />
+                <FormEntry
+                  form={form}
+                  request={initialRequest}
+                  isReadonly={true}
+                />
                 <AwaitingReview form={form} state={state} />
               </>
             )}
