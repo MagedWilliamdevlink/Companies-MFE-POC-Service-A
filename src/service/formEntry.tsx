@@ -13,7 +13,7 @@ interface FormErrors {
   capital?: string;
 }
 
-export default function FormEntry({ form, isReadonly = false }) {
+export default function FormEntry({ form, request, isReadonly = false }) {
   // Import shared UI - all parcels ready to use
 
   // Form state for step 1
@@ -64,13 +64,7 @@ export default function FormEntry({ form, isReadonly = false }) {
         <Form
           disabled={isReadonly}
           initialValues={{
-            formEntry: {
-              companyName: "xyz",
-              companyType: "llc",
-              activityType: "general_trade",
-              commercialRegister: "1234",
-              capital: "4321",
-            },
+            ...request.formEntry,
           }}
           form={form}
           name="formEntry"
