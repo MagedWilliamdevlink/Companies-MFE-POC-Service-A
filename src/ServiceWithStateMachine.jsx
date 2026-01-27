@@ -1,7 +1,7 @@
 import { useSelector } from "@xstate/react";
 import Parcel from "single-spa-react/parcel";
 import { createCheckoutMachine } from "./machine/serviceA";
-import FormEntry from "./service/formEntry";
+import FormEntry from "./service/FormEntry";
 import AwaitingReview from "./service/AwaitingReview";
 import BillingSummary from "./service/BillingSummary";
 import PaymentSuccess from "./service/PaymentSuccess";

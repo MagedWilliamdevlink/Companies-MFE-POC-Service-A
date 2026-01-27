@@ -1,5 +1,4 @@
 import { assign, createActor, setup, transition } from "xstate";
-import { getSavedRequestById } from "../requestStorage";
 
 const stateMachine = setup({
   types: {
@@ -33,7 +32,6 @@ const stateMachine = setup({
     },
     isPaymentCompleted: ({ context, event }) => {
       // console.log("isPaymentCompleted", event);
-
       if (event.type === "PAYMENT_SUCCEEDED") {
         return true;
       }

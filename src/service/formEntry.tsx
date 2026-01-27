@@ -1,15 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import Parcel from "single-spa-react/parcel";
 import { mountRootParcel } from "single-spa";
-import { Form, Input } from "antd";
-import {
-  VerticalStepperParcel,
-  NavigationButtonsParcel,
-  FormLabelParcel,
-  FormInputParcel,
-  FormSelectParcel,
-  PaymentTableParcel,
-} from "../shared-ui";
+import { Form } from "antd";
+import { FormInputParcel, FormSelectParcel } from "../shared-ui";
 import { styles } from "../styles";
 
 interface FormErrors {
@@ -33,8 +26,6 @@ export default function FormEntry({ form, isReadonly = false }) {
   });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
-  const lastProcessedRequestIdRef = useRef<string | null>(null);
-  const formDataRef = useRef(formData);
 
   // ==========================================
   // DATA - service-a controls the data
@@ -56,40 +47,6 @@ export default function FormEntry({ form, isReadonly = false }) {
     { label: "استثمار عقاري", value: "real_estate" },
     { label: "تكنولوجيا المعلومات", value: "it" },
   ];
-
-  // Validation function
-  const validateForm = (): boolean => {
-    const errors: FormErrors = {};
-
-    if (!formData.companyName.trim()) {
-      errors.companyName = "اسم الشركة مطلوب";
-    } else if (formData.companyName.length < 3) {
-      errors.companyName = "اسم الشركة يجب أن يكون 3 أحرف على الأقل";
-    }
-
-    if (!formData.companyType) {
-      errors.companyType = "نوع الشركة مطلوب";
-    }
-
-    if (!formData.activityType) {
-      errors.activityType = "نوع النشاط مطلوب";
-    }
-
-    if (!formData.commercialRegister.trim()) {
-      errors.commercialRegister = "رقم السجل التجاري مطلوب";
-    } else if (!/^\d+$/.test(formData.commercialRegister)) {
-      errors.commercialRegister = "رقم السجل التجاري يجب أن يكون أرقام فقط";
-    }
-
-    if (!formData.capital.trim()) {
-      errors.capital = "رأس المال مطلوب";
-    } else if (!/^\d+$/.test(formData.capital)) {
-      errors.capital = "رأس المال يجب أن يكون أرقام فقط";
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
 
   // Handle field change
   const handleFieldChange = (field: string, value: string | number) => {
