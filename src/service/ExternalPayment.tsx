@@ -38,23 +38,9 @@ export default function ExternalPayment({
           fullWidth={false}
           className={"w-fit"}
           onClick={() => {
-            console.log(
-              "Before PAYMENT_SUCCEEDED:",
-              "Current state:",
-              state.value,
-              "Can send PAYMENT_SUCCEEDED:",
-              state.can({ type: "PAYMENT_SUCCEEDED" })
-            );
             checkoutMachine.send({ type: "PAYMENT_SUCCEEDED" });
             // Get the updated state after the event is processed
             const updatedState = checkoutMachine.getSnapshot();
-            console.log(
-              "After PAYMENT_SUCCEEDED:",
-              "New state:",
-              updatedState.value,
-              "Context:",
-              updatedState.context
-            );
             // Store the snapshot with updated context
             updateRequestStep(requestID, updatedState.value, {}, updatedState);
           }}

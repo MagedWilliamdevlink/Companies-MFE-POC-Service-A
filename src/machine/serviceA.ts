@@ -18,7 +18,7 @@ const stateMachine = setup({
   },
   guards: {
     isFormValid: ({ context, event }) => {
-      console.log(event);
+      // console.log(event);
       if (event.type === "NEXT" && event?.validStep) {
         return true;
       }
@@ -32,7 +32,7 @@ const stateMachine = setup({
       return false;
     },
     isPaymentCompleted: ({ context, event }) => {
-      console.log("isPaymentCompleted", event);
+      // console.log("isPaymentCompleted", event);
 
       if (event.type === "PAYMENT_SUCCEEDED") {
         return true;
@@ -41,7 +41,7 @@ const stateMachine = setup({
       return false;
     },
     isShippingValid: ({ context, event }) => {
-      console.log("isShippingValid", event);
+      // console.log("isShippingValid", event);
       if (event.type === "NEXT" && event?.validStep) {
         return true;
       }
@@ -196,7 +196,7 @@ export function predictNextTurnAction(predictionStateMachine) {
 
 // Function to create the checkout machine actor with optional snapshot restoration
 export function createCheckoutMachine(snapshot?: any) {
-  console.log("snapshot", snapshot);
+  // console.log("snapshot", snapshot);
   if (snapshot) {
     return createActor(stateMachine, { snapshot }).start();
   }

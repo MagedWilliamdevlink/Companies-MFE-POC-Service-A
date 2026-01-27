@@ -97,7 +97,7 @@ export default function ServiceComponent() {
   const [form] = Form.useForm();
 
   const handlePrevious = () => {
-    console.log("must go back");
+    // console.log("must go back");
     checkoutMachine.send({ type: "PREVIOUS" });
     const updatedState = checkoutMachine.getSnapshot();
     // Store the snapshot with updated context
@@ -108,7 +108,7 @@ export default function ServiceComponent() {
     form
       .validateFields(true)
       .then((v) => {
-        console.log("v", v);
+        // console.log("v", v);
         // Send the event to update the machine context first
         checkoutMachine.send({
           type: "NEXT",
@@ -181,35 +181,34 @@ export default function ServiceComponent() {
 
             {inCompleted && <Completed />}
             <br />
+          </div>
+          <div className="flex gap-2 justify-end px-3 w-full">
+            {state.can({ type: "PREVIOUS" }) && (
+              <Parcel
+                config={ButtonParcel}
+                mountParcel={mountRootParcel}
+                size={"sm"}
+                variant={"outline"}
+                fullWidth={false}
+                className={"w-fit"}
+                onClick={handlePrevious}
+              >
+                الرجوع
+              </Parcel>
+            )}
 
-            <div className="flex gap-2 justify-end px-3">
-              {state.can({ type: "PREVIOUS" }) && (
-                <Parcel
-                  config={ButtonParcel}
-                  mountParcel={mountRootParcel}
-                  size={"sm"}
-                  variant={"outline"}
-                  fullWidth={false}
-                  className={"w-fit"}
-                  onClick={handlePrevious}
-                >
-                  الرجوع
-                </Parcel>
-              )}
-
-              {state.can({ type: "NEXT" }) && (
-                <Parcel
-                  config={ButtonParcel}
-                  mountParcel={mountRootParcel}
-                  size={"sm"}
-                  fullWidth={false}
-                  className={"w-fit"}
-                  onClick={handleNext}
-                >
-                  التالي
-                </Parcel>
-              )}
-            </div>
+            {state.can({ type: "NEXT" }) && (
+              <Parcel
+                config={ButtonParcel}
+                mountParcel={mountRootParcel}
+                size={"sm"}
+                fullWidth={false}
+                className={"w-fit"}
+                onClick={handleNext}
+              >
+                التالي
+              </Parcel>
+            )}
           </div>
         </main>
       </div>

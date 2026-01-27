@@ -73,7 +73,7 @@ export function saveRequest(request: RequestData): void {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
 
-    console.log(JSON.stringify(requests));
+    // console.log(JSON.stringify(requests));
     // Dispatch custom event to notify other components
     window.dispatchEvent(new CustomEvent("requestUpdated"));
   } catch (error) {
@@ -127,7 +127,7 @@ export function updateRequestStep(
   if (machineSnapshot) {
     request.machineSnapshot = machineSnapshot;
   }
-  console.log(requestId, step, formData, request, machineSnapshot);
+  // console.log(requestId, step, formData, request, machineSnapshot);
   // Mark previous steps as completed
   // if (!request.completedSteps.includes(step - 1) && step > 1) {
   //   request.completedSteps.push(step - 1);
