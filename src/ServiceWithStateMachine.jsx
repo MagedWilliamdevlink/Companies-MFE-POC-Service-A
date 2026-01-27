@@ -9,7 +9,7 @@ import PaymentSuccess from "./service/PaymentSuccess";
 import ShippingAddress from "./service/ShippingAddress";
 import Completed from "./service/Completed";
 import { mountRootParcel } from "single-spa";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 
 import { VerticalStepperParcel, ButtonParcel } from "./shared-ui";
 import { styles } from "./styles";
@@ -59,16 +59,31 @@ const steps = [
 export default function ServiceComponent() {
   const requestID = getRequestID();
   const initialRequest = getRequest(requestID);
+  const navigatingFromCompletedRef = useRef(false);
+  const machineRef = useRef(null);
 
   // Create the machine actor with stored snapshot if available
   const checkoutMachine = useMemo(() => {
+    // If we're navigating back from completed, keep the existing machine
+    if (navigatingFromCompletedRef.current) {
+      navigatingFromCompletedRef.current = false;
+      return machineRef.current; // Return existing machine
+    }
     const storedSnapshot = initialRequest?.machineSnapshot;
     // Only use snapshot if it exists and is not null
-    return createCheckoutMachine(storedSnapshot || undefined);
+    const newMachine = createCheckoutMachine(storedSnapshot || undefined);
+    machineRef.current = newMachine;
+    return newMachine;
   }, [initialRequest?.machineSnapshot]);
+  
+  // Ensure we always have a machine instance
+  if (!machineRef.current && checkoutMachine) {
+    machineRef.current = checkoutMachine;
+  }
+  const stableMachine = checkoutMachine || machineRef.current;
 
   // useSelector tells React to re-render whenever the actor's state changes
-  const state = useSelector(checkoutMachine, (snapshot) => snapshot);
+  const state = useSelector(stableMachine, (snapshot) => snapshot);
 
   // Now these will update automatically!
   const inFormEntry = state.matches("formEntry");
@@ -99,11 +114,17 @@ export default function ServiceComponent() {
 
   const handlePrevious = () => {
     // console.log("must go back");
-    checkoutMachine.send({ type: "PREVIOUS" });
-    if (state.value === "completed") {
+    const isCurrentlyCompleted = state.value === "completed";
+    if (isCurrentlyCompleted) {
+      // Mark that we're navigating back from completed to prevent machine recreation
+      navigatingFromCompletedRef.current = true;
+    }
+    stableMachine.send({ type: "PREVIOUS" });
+    // If we were on completed state, don't update localStorage
+    if (isCurrentlyCompleted) {
       return;
     }
-    const updatedState = checkoutMachine.getSnapshot();
+    const updatedState = stableMachine.getSnapshot();
     // Store the snapshot with updated context
     updateRequestStep(requestID, updatedState.value, {}, updatedState);
   };
@@ -114,7 +135,7 @@ export default function ServiceComponent() {
       .then((v) => {
         // console.log("v", v);
         // Send the event to update the machine context first
-        checkoutMachine.send({
+        stableMachine.send({
           type: "NEXT",
           validStep: true,
         });
@@ -123,7 +144,7 @@ export default function ServiceComponent() {
           return;
         }
         // Get the updated state after the event is processed
-        const updatedState = checkoutMachine.getSnapshot();
+        const updatedState = stableMachine.getSnapshot();
         // Store the snapshot with updated context
         updateRequestStep(requestID, updatedState.value, v, updatedState);
       })
@@ -180,7 +201,7 @@ export default function ServiceComponent() {
               <Bill
                 form={form}
                 requestID={requestID}
-                checkoutMachine={checkoutMachine}
+                checkoutMachine={stableMachine}
               />
             )}
 

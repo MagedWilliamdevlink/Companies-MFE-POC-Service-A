@@ -171,16 +171,6 @@ const stateMachine = setup({
   },
 });
 
-export function predictNextTurnAction(predictionStateMachine) {
-  if (predictionStateMachine) {
-    const currentState = predictionStateMachine.getSnapshot();
-    const [nextState] = transition(predictionStateMachine.logic, currentState, {
-      type: "NEXT",
-    });
-    return nextState.value;
-  }
-}
-
 // Function to create the checkout machine actor with optional snapshot restoration
 export function createCheckoutMachine(snapshot?: any) {
   // console.log("snapshot", snapshot);
