@@ -41,7 +41,6 @@ const paymentHistoryData = [
 export default function BillingSummary({ form }) {
   return (
     <>
-      Application approved, heres the bill
       <Parcel
         config={PaymentTableParcel}
         mountParcel={mountRootParcel}

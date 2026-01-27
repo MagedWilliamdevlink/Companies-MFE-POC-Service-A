@@ -46,8 +46,10 @@ const stateMachine = setup({
       // Add your guard condition here
       return false;
     },
-    hasPaymentCompletedInContext: ({ context }) => {
-      return context.isPaymentCompleted === true;
+    hasShippingCompletedInContext: ({ context }) => {
+      return (
+        context.isShippingValid === true && context.isRequestComplete === true
+      );
     },
   },
 }).createMachine({
@@ -103,17 +105,15 @@ const stateMachine = setup({
     },
     billingSummary: {
       on: {
-        NEXT: [
-          {
-            target: "paymentSuccess",
-            guard: {
-              type: "hasPaymentCompletedInContext",
-            },
-          },
-          {
-            target: "externalPayment",
-          },
-        ],
+        PAYMENT_SUCCEEDED: {
+          target: "paymentSuccess",
+          actions: assign({
+            isPaymentCompleted: true,
+          }),
+        },
+        PAYMENT_FAILED: {
+          target: "billingSummary",
+        },
         PREVIOUS: {
           target: "awaitingReview",
         },
@@ -136,12 +136,17 @@ const stateMachine = setup({
     },
     paymentSuccess: {
       on: {
-        NEXT: {
-          target: "shippingAddress",
-        },
-        PREVIOUS: {
-          target: "billingSummary",
-        },
+        NEXT: [
+          {
+            target: "completed",
+            guard: {
+              type: "hasShippingCompletedInContext",
+            },
+          },
+          {
+            target: "shippingAddress",
+          },
+        ],
       },
       description: "Show Payment Succeeded with timestamp",
     },
@@ -171,7 +176,7 @@ const stateMachine = setup({
     completed: {
       on: {
         PREVIOUS: {
-          target: "billingSummary",
+          target: "paymentSuccess",
         },
       },
       description: "Service is complete",

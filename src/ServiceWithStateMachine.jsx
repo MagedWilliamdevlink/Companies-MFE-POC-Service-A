@@ -3,6 +3,7 @@ import Parcel from "single-spa-react/parcel";
 import { createCheckoutMachine } from "./machine/serviceA";
 import FormEntry from "./service/FormEntry";
 import AwaitingReview from "./service/AwaitingReview";
+import Bill from "./service/Bill";
 import BillingSummary from "./service/BillingSummary";
 import PaymentSuccess from "./service/PaymentSuccess";
 import ExternalPayment from "./service/ExternalPayment";
@@ -33,7 +34,8 @@ const steps = [
   {
     id: "billingSummary",
     completeon: "isPaymentCompleted",
-    title: "سجل المدفوعات",
+    title: "ملخص رسوم الخدمة",
+    // title: "سجل المدفوعات",
     subtitle: "عرض المدفوعات السابقة",
   },
   {
@@ -45,7 +47,7 @@ const steps = [
   {
     id: "shippingAddress",
     completeon: "isShippingValid",
-    title: "الخطوة الخامسة",
+    title: "عنوان الشحن",
   },
   {
     id: "completed",
@@ -74,18 +76,18 @@ export default function ServiceComponent() {
   const inAwaitingReview = state.matches("awaitingReview");
   const inBillingSummary = state.matches("billingSummary");
   const inPaymentSuccess = state.matches("paymentSuccess");
-  const inExternalPayment = state.matches("externalPayment");
   const inShippingAddress = state.matches("shippingAddress");
   const inCompleted = state.matches("completed");
 
   let CurrentStepOrder = 0;
   const stepsWithStatus = steps.map((s, idx) => {
-    if (state.context[s.completeon] === true) {
-      return { ...s, status: "finish" };
-    }
+    console.log(state.context[s.completeon], s.id, state.value);
     if (s.id === state.value) {
       CurrentStepOrder = idx;
       return { ...s, status: "current" };
+    }
+    if (state.context[s.completeon] === true) {
+      return { ...s, status: "finish" };
     }
     return s;
   });
@@ -164,17 +166,19 @@ export default function ServiceComponent() {
               </>
             )}
 
-            {inBillingSummary && <BillingSummary form={form} />}
-
-            {inPaymentSuccess && <PaymentSuccess form={form} />}
-
-            {inExternalPayment && (
-              <ExternalPayment
+            {inBillingSummary && (
+              <Bill
                 form={form}
                 requestID={requestID}
-                state={state}
                 checkoutMachine={checkoutMachine}
               />
+            )}
+
+            {inPaymentSuccess && (
+              <>
+                <PaymentSuccess form={form} />
+                <BillingSummary form={form} />
+              </>
             )}
 
             {inShippingAddress && <ShippingAddress form={form} />}

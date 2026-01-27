@@ -4,7 +4,7 @@ import TextArea from "antd/es/input/TextArea";
 export default function ShippingAddress({ form }) {
   return (
     <>
-      now enter you address to ship the thing
+      أدخل الآن عنوانك لشحن الخدمة
       <Form form={form} layout="vertical">
         <Form.Item
           name={["shipping", "address"]}

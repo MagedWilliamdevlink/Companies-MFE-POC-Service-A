@@ -4,12 +4,7 @@ import { ButtonParcel } from "../shared-ui";
 import { mountRootParcel } from "single-spa";
 import { updateRequestStep } from "../requestStorage";
 
-export default function ExternalPayment({
-  form,
-  requestID,
-  state,
-  checkoutMachine,
-}) {
+export default function ExternalPayment({ form, requestID, checkoutMachine }) {
   return (
     <>
       we are now in efiniance land
