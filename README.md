@@ -1,6 +1,6 @@
-!(screenshot)[/screenshot.png]
+![screenshot](/screenshot.png)
 
-:::mermaid
+```mermaid
 %% Generated with Stately Studio
 stateDiagram-v2
   state "checkoutWorkflow" as checkoutWorkflow {
@@ -25,4 +25,4 @@ stateDiagram-v2
     state "shippingRequired\n\nEnter shipment address" as shippingRequired
     state "completed\n\nService is complete" as completed
   }
-:::
+```
